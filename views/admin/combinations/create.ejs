@@ -1,39 +1,38 @@
-<div class="admin-page-header">
-  <div>
-    <h1><%= typeof isSuper !== "undefined" && isSuper ? "Add Combination" : "Request New Combination" %></h1>
-    <div class="admin-breadcrumb">
-      <a href="<%= typeof session !== 'undefined' && session.adminRole === 'sub' ? '/admin/levels/' + session.adminLevelId + '/combinations' : '/admin/levels' %>">Levels</a> ›
-      <a href="/admin/levels/<%= level.id %>/combinations"><%= level.name %></a> ›
-      Add
+<div class="admin-page">
+  <div class="admin-page-header">
+    <div>
+      <div class="breadcrumb-admin"><a href="/admin/levels">Levels</a> › <a href="/admin/levels/<%= level.id %>/combinations"><%= level.name %></a> › Add</div>
+      <h1>Add <% if(level.slug==='tvet'){ %>Trade<% }else{ %>Combination<% } %></h1>
     </div>
+    <a href="/admin/levels/<%= level.id %>/combinations" class="btn btn-secondary">← Back</a>
   </div>
-</div>
-<div class="card" style="max-width:700px">
-  <div class="card-body">
+  <div class="form-card">
     <form action="/admin/levels/<%= level.id %>/combinations" method="POST">
-      <div class="form-grid">
-        <div class="form-group full">
-          <label>Name <span class="req">*</span></label>
-          <input type="text" name="name" placeholder="e.g. MPC, PCB, SOD, Computer Science" required>
-          <span class="form-hint">Short code or full name e.g. MPC, Physics-Chemistry-Biology</span>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Short Name * (e.g. MPC, SOD)</label>
+          <input type="text" name="name" placeholder="MPC" required>
         </div>
-        <div class="form-group full">
-          <label>Description</label>
-          <textarea name="description" placeholder="Brief description of this combination..."></textarea>
+        <div class="form-group">
+          <label>Full Name</label>
+          <input type="text" name="full_name" placeholder="Mathematics, Physics, Chemistry">
         </div>
+      </div>
+      <div class="form-group">
+        <label>Description</label>
+        <textarea name="description" rows="2" placeholder="Optional description"></textarea>
+      </div>
+      <div class="form-row">
         <div class="form-group">
           <label>Color</label>
           <input type="color" name="color" value="#6366f1">
         </div>
         <div class="form-group">
-          <label>Display Order</label>
+          <label>Order</label>
           <input type="number" name="order_index" value="0" min="0">
         </div>
       </div>
-      <div style="display:flex;gap:1rem;margin-top:1.5rem">
-        <button type="submit" class="btn btn-primary btn-lg"><%= typeof isSuper !== "undefined" && isSuper ? "Create Combination" : "Submit Request" %></button>
-        <a href="/admin/levels/<%= level.id %>/combinations" class="btn btn-secondary btn-lg">Cancel</a>
-      </div>
+      <button type="submit" class="btn btn-primary">Create</button>
     </form>
   </div>
 </div>

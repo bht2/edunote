@@ -1,39 +1,35 @@
-<div class="admin-page-header">
-  <div>
-    <h1>Education Levels</h1>
-    <div class="admin-breadcrumb">Manage O'Level, A'Level, TVET</div>
+<div class="admin-page">
+  <div class="admin-page-header">
+    <h1>🎓 Education Levels</h1>
+    <a href="/admin/levels/create" class="btn btn-primary">+ Add Level</a>
   </div>
-  <a href="/admin/levels/create" class="btn btn-primary">+ Add Level</a>
-</div>
 
-<% if (levels.length === 0) { %>
-  <div class="card">
-    <div class="card-body" style="text-align:center;padding:4rem">
-      <div style="font-size:3rem;margin-bottom:1rem">🎓</div>
-      <h3 style="color:var(--ink);margin-bottom:.5rem">No levels yet</h3>
-      <p style="color:var(--muted);margin-bottom:1.5rem">Create O'Level, A'Level, or TVET levels.</p>
-      <a href="/admin/levels/create" class="btn btn-primary">+ Add First Level</a>
-    </div>
+  <div class="admin-table-card">
+    <% if (levels.length === 0) { %>
+      <div class="empty-state"><p>No education levels yet. <a href="/admin/levels/create">Add one</a></p></div>
+    <% } else { %>
+      <table class="admin-table">
+        <thead>
+          <tr><th>Icon</th><th>Name</th><th>Description</th><th>Color</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+          <% levels.forEach(level => { %>
+          <tr>
+            <td><%= level.icon %></td>
+            <td><strong><%= level.name %></strong></td>
+            <td><%= level.description || '—' %></td>
+            <td><span class="color-dot" style="background:<%= level.color %>"></span></td>
+            <td class="table-actions">
+              <a href="/admin/levels/<%= level.id %>/combinations" class="btn btn-sm btn-primary">Combinations →</a>
+              <a href="/admin/levels/<%= level.id %>/edit" class="btn btn-sm btn-secondary">Edit</a>
+              <form action="/admin/levels/<%= level.id %>/delete" method="POST" style="display:inline" onsubmit="return confirm('Delete this level and ALL its combinations/classes/notes?')">
+                <button class="btn btn-sm btn-danger">Delete</button>
+              </form>
+            </td>
+          </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    <% } %>
   </div>
-<% } else { %>
-  <div class="level-cards-grid">
-    <% levels.forEach(level => { %>
-      <div class="level-manage-card">
-        <div class="level-manage-card-top">
-          <div class="level-manage-dot" style="background:<%= level.color %>"></div>
-          <div>
-            <h3><%= level.name %></h3>
-            <p><%= level.description || 'No description' %></p>
-          </div>
-        </div>
-        <div class="level-manage-card-actions">
-          <a href="/admin/levels/<%= level.id %>/combinations" class="btn btn-success btn-sm">📚 Combinations</a>
-          <a href="/admin/levels/<%= level.id %>/edit" class="btn btn-secondary btn-sm">Edit</a>
-          <form action="/admin/levels/<%= level.id %>/delete" method="POST" onsubmit="return confirm('Delete this level and ALL its content?')">
-            <button type="submit" class="btn btn-danger btn-sm">Delete</button>
-          </form>
-        </div>
-      </div>
-    <% }) %>
-  </div>
-<% } %>
+</div>

@@ -1,57 +1,40 @@
-<div class="admin-page-header">
-  <div>
-    <h1><%= combo.name %> — <%= cls.name %> Notes</h1>
-    <div class="admin-breadcrumb">
-      <a href="<%= typeof session !== 'undefined' && session.adminRole === 'sub' ? '/admin/levels/' + session.adminLevelId + '/combinations' : '/admin/levels' %>">Levels</a> ›
-      <a href="/admin/levels/<%= level.id %>/combinations"><%= level.name %></a> ›
-      <a href="/admin/levels/<%= level.id %>/combinations/<%= combo.id %>/classes"><%= combo.name %></a> ›
-      <span><%= cls.name %></span>
+<div class="admin-page">
+  <div class="admin-page-header">
+    <div>
+      <div class="breadcrumb-admin">
+        <a href="/admin/combinations/<%= combo.id %>/classes"><%= combo.name %></a> › <%= cls.name %> › Notes
+      </div>
+      <h1><span class="combo-badge" style="background:<%= combo.color %>"><%= combo.name %></span> <%= cls.name %> — Notes</h1>
     </div>
+    <a href="/admin/classes/<%= cls.id %>/notes/create" class="btn btn-primary">+ Upload Note</a>
   </div>
-  <a href="/admin/levels/<%= level.id %>/combinations/<%= combo.id %>/classes/<%= cls.id %>/notes/create" class="btn btn-primary">+ Upload Note</a>
-</div>
 
-<% if (notes.length === 0) { %>
-  <div class="card">
-    <div class="card-body" style="text-align:center;padding:4rem">
-      <div style="font-size:3rem;margin-bottom:1rem">📄</div>
-      <h3 style="color:var(--ink);margin-bottom:.5rem">No notes yet</h3>
-      <p style="color:var(--muted);margin-bottom:1.5rem">Upload the first note for <%= combo.name %> <%= cls.name %></p>
-      <a href="/admin/levels/<%= level.id %>/combinations/<%= combo.id %>/classes/<%= cls.id %>/notes/create" class="btn btn-primary">+ Upload Note</a>
-    </div>
-  </div>
-<% } else { %>
-  <div class="card">
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr><th>Title</th><th>File</th><th>Size</th><th>Downloads</th><th>Date</th><th>Actions</th></tr>
-        </thead>
+  <div class="admin-table-card">
+    <% if (notes.length === 0) { %>
+      <div class="empty-state">
+        <p>No notes uploaded yet. <a href="/admin/classes/<%= cls.id %>/notes/create">Upload the first note</a></p>
+      </div>
+    <% } else { %>
+      <table class="admin-table">
+        <thead><tr><th>Title</th><th>Subject</th><th>Size</th><th>Downloads</th><th>Actions</th></tr></thead>
         <tbody>
           <% notes.forEach(note => { %>
-            <%
-              const ext = (note.file_original_name || '').split('.').pop().toLowerCase();
-              const sizeStr = note.file_size > 1024*1024 ? (note.file_size/1024/1024).toFixed(1)+'MB' : Math.round(note.file_size/1024)+'KB';
-            %>
-            <tr>
-              <td><strong><%= note.title %></strong><% if(note.description){ %><br><span style="font-size:.8rem;color:var(--muted)"><%= note.description.substring(0,60) %><%= note.description.length>60?'...':'' %></span><% } %></td>
-              <td><span class="badge badge-primary"><%= ext.toUpperCase() %></span></td>
-              <td style="color:var(--muted);font-size:.85rem"><%= sizeStr %></td>
-              <td><%= note.download_count || 0 %></td>
-              <td style="color:var(--muted);font-size:.8rem"><%= new Date(note.created_at).toLocaleDateString() %></td>
-              <td>
-                <div style="display:flex;gap:.5rem">
-                  <a href="/download/<%= note.id %>" class="btn btn-secondary btn-sm" target="_blank">⬇</a>
-                  <a href="/admin/levels/<%= level.id %>/combinations/<%= combo.id %>/classes/<%= cls.id %>/notes/<%= note.id %>/edit" class="btn btn-secondary btn-sm">Edit</a>
-                  <form action="/admin/levels/<%= level.id %>/combinations/<%= combo.id %>/classes/<%= cls.id %>/notes/<%= note.id %>/delete" method="POST" onsubmit="return confirm('Delete this note?')">
-                    <button type="submit" class="btn btn-danger btn-sm">Del</button>
-                  </form>
-                </div>
-              </td>
-            </tr>
+          <tr>
+            <td><strong><%= note.title %></strong></td>
+            <td><%= note.subject || '—' %></td>
+            <td><%= note.file_size_formatted %></td>
+            <td><%= note.download_count %></td>
+            <td class="table-actions">
+              <a href="/read/<%= note.id %>" target="_blank" class="btn btn-sm btn-secondary">View</a>
+              <a href="/admin/classes/<%= cls.id %>/notes/<%= note.id %>/edit" class="btn btn-sm btn-secondary">Edit</a>
+              <form action="/admin/classes/<%= cls.id %>/notes/<%= note.id %>/delete" method="POST" style="display:inline" onsubmit="return confirm('Delete this note?')">
+                <button class="btn btn-sm btn-danger">Delete</button>
+              </form>
+            </td>
+          </tr>
           <% }) %>
         </tbody>
       </table>
-    </div>
+    <% } %>
   </div>
-<% } %>
+</div>

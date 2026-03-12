@@ -1,6 +1,6 @@
 <section class="page-header sector-page-header" style="--sector-color: <%= sector.color %>">
   <div class="container">
-    <a href="/notes" class="back-link">← All Subjects</a>
+    <a href="/notes" class="back-link">\u2190 All Subjects</a>
     <div class="sector-header-info">
       <div class="sector-icon-lg"><span><%= sector.name.charAt(0) %></span></div>
       <div>
@@ -20,10 +20,10 @@
 
     <% if (levels.length === 0) { %>
       <div class="empty-state">
-        <div class="empty-icon">📂</div>
+        <div class="empty-icon">\ud83d\udcc2</div>
         <h3>No levels added yet</h3>
         <p>Notes for <strong><%= sector.name %></strong> are being prepared. Check back soon!</p>
-        <a href="/notes" class="btn btn-outline-dark" style="margin-top:1.5rem">← Browse other subjects</a>
+        <a href="/notes" class="btn btn-outline-dark" style="margin-top:1.5rem">\u2190 Browse other subjects</a>
       </div>
     <% } else { %>
       <div class="level-picker-grid">

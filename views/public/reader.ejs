@@ -1,55 +1,85 @@
-<div class="reader-toolbar">
-  <a href="javascript:history.back()" class="reader-back">← Back</a>
-  <div class="reader-title"><%= note.title %></div>
-  <span class="reader-badge">👁 Reading online</span>
-  <a href="/download/<%= note.id %>" class="btn-reader-download">⬇ Download</a>
-</div>
+<% const ext = note.file_original_name.split('.').pop().toLowerCase(); %>
 
-<div class="reader-frame">
-  <% if (ext === 'pdf') { %>
-    <div class="reader-spinner" id="readerSpinner">
-      <div class="spinner"></div>
-      <span>Loading PDF…</span>
+<!-- \u2500\u2500 TOP TOOLBAR \u2500\u2500 -->
+<header class="rd-toolbar">
+  <div class="rd-toolbar-left">
+    <a href="javascript:history.back()" class="rd-back-btn">
+      <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+      </svg>
+      <span>Back</span>
+    </a>
+    <div class="rd-sep"></div>
+    <span class="rd-ext-pill rd-ext-<%= ext %>"><%= ext.toUpperCase() %></span>
+    <div class="rd-note-meta">
+      <span class="rd-note-title"><%= note.title %></span>
+      <span class="rd-note-sub"><%= note.sector_name %> \u203a <%= note.level_name %> \u00b7 <%= note.file_size_formatted %></span>
     </div>
-    <iframe src="/stream/<%= note.id %>" title="<%= note.title %>" onload="document.getElementById('readerSpinner').style.display='none'"></iframe>
+  </div>
+  <div class="rd-toolbar-right">
+    <% if (readMode !== 'pdf') { %>
+      <span class="rd-reading-label">
+        <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+          <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+        </svg>
+        Reading online
+      </span>
+    <% } %>
+    <a href="/download/<%= note.id %>" class="rd-download-btn">
+      <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+      </svg>
+      Download
+    </a>
+  </div>
+</header>
 
-  <% } else if (ext === 'docx' || ext === 'doc') { %>
-    <div style="height:100%;overflow:auto;background:#f8f7ff;padding:2rem 1rem">
-      <div id="docxContent" style="max-width:820px;margin:0 auto;background:white;padding:3rem 3.5rem;border-radius:12px;box-shadow:0 2px 16px rgba(0,0,0,.08);font-family:'DM Sans',sans-serif;font-size:1rem;line-height:1.8;color:#0f0e17;min-height:400px">
-        <div style="text-align:center;padding:3rem;color:#6b6a7a" id="docxLoading">
-          <div class="spinner" style="margin:0 auto 1rem"></div>
-          <p>Converting document…</p>
-        </div>
+<!-- \u2500\u2500 CONTENT \u2500\u2500 -->
+<main class="rd-main">
+
+  <% if (readMode === 'pdf') { %>
+    <!-- PDF \u2014 native browser embed, best experience -->
+    <iframe
+      src="/view/<%= note.id %>"
+      class="rd-pdf-frame"
+      title="<%= note.title %>">
+    </iframe>
+
+  <% } else if (readMode === 'html' && html) { %>
+    <!-- DOCX / DOC / PPT / PPTX \u2014 converted to HTML server-side -->
+    <div class="rd-paper-wrap">
+      <div class="rd-paper">
+        <div class="rd-doc-content"><%- html %></div>
       </div>
     </div>
-    <script>
-      fetch('/docx/<%= note.id %>')
-        .then(r => { if(!r.ok) throw new Error(r.status); return r.text(); })
-        .then(html => {
-          document.getElementById('docxContent').innerHTML =
-            '<style>#docxContent h1,#docxContent h2,#docxContent h3{font-family:Fraunces,serif;margin:1.5rem 0 .75rem;color:#0f0e17}#docxContent h1{font-size:1.8rem}#docxContent h2{font-size:1.4rem}#docxContent p{margin-bottom:1rem}#docxContent table{width:100%;border-collapse:collapse;margin:1.5rem 0}#docxContent td,#docxContent th{border:1px solid #e4e2f0;padding:.6rem .9rem}#docxContent th{background:#f8f7ff;font-weight:600}#docxContent img{max-width:100%;border-radius:8px;margin:1rem 0}#docxContent ul,#docxContent ol{padding-left:1.5rem;margin-bottom:1rem}#docxContent li{margin-bottom:.35rem}</style>' + html;
-        })
-        .catch(() => {
-          document.getElementById('docxContent').innerHTML = '<div style="text-align:center;padding:3rem"><div style="font-size:3rem;margin-bottom:1rem">⚠️</div><h3>Could not render document</h3><p style="color:#6b6a7a;margin:.75rem 0 1.5rem">Please download the file to read it.</p><a href="/download/<%= note.id %>" style="background:#4f46e5;color:white;padding:.85rem 2rem;border-radius:10px;font-weight:600;display:inline-block">⬇ Download File</a></div>';
-        });
-    </script>
 
-  <% } else if (ext === 'txt') { %>
-    <div style="height:100%;overflow:auto;background:#1e1e2e;padding:2rem 1rem">
-      <pre id="txtContent" style="max-width:820px;margin:0 auto;color:#cdd6f4;font-size:.9rem;line-height:1.7;white-space:pre-wrap;word-break:break-word">Loading…</pre>
+  <% } else if (readMode === 'txt' && txtContent) { %>
+    <!-- TXT \u2014 rendered with reader typography -->
+    <div class="rd-paper-wrap">
+      <div class="rd-paper rd-paper-txt">
+        <pre class="rd-txt-content"><%= txtContent %></pre>
+      </div>
     </div>
-    <script>
-      fetch('/download/<%= note.id %>').then(r=>r.text()).then(t=>{document.getElementById('txtContent').textContent=t;}).catch(()=>{document.getElementById('txtContent').textContent='Could not load.';});
-    </script>
 
   <% } else { %>
-    <div style="height:100%;overflow:auto;background:#f8f7ff;display:flex;align-items:center;justify-content:center;padding:2rem">
-      <div style="text-align:center;max-width:480px;background:white;padding:3rem;border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,.1)">
-        <div style="font-size:4rem;margin-bottom:1rem">📄</div>
-        <h2 style="font-family:Fraunces,serif;font-size:1.4rem;color:#0f0e17;margin-bottom:.75rem"><%= note.title %></h2>
-        <p style="color:#6b6a7a;font-size:.9rem;margin-bottom:1.5rem"><strong><%= (ext||'This file').toUpperCase() %></strong> cannot be previewed. Please download to open.</p>
-        <a href="/download/<%= note.id %>" style="background:#4f46e5;color:white;padding:.85rem 2rem;border-radius:10px;font-weight:600;display:inline-flex;align-items:center;gap:.5rem">⬇ Download to Read</a>
+    <!-- Unsupported / conversion failed -->
+    <div class="rd-unsupported">
+      <div class="rd-unsupported-icon">\ud83d\udcce</div>
+      <h2>Cannot preview this file</h2>
+      <p>This file type couldn't be converted for online reading.<br>
+         Download it to open it with the appropriate application on your device.</p>
+      <div class="rd-unsupported-meta">
+        <span><strong><%= note.file_original_name %></strong></span>
+        <span><%= note.file_size_formatted %></span>
       </div>
+      <a href="/download/<%= note.id %>" class="rd-big-download">
+        <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+        </svg>
+        Download File
+      </a>
     </div>
   <% } %>
-</div>
+
+</main>

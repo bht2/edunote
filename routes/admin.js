@@ -1,77 +1,61 @@
-const express = require('express');
-const router = express.Router();
-const { isAuthenticated, isGuest, isSuperAdmin, canAccessLevel } = require('../middleware/auth');
-const upload = require('../middleware/upload');
-const uploadAvatar = require('../middleware/uploadAvatar');
-
-const auth       = require('../controllers/authController');
-const dash       = require('../controllers/dashboardController');
-const levelCtrl  = require('../controllers/levelController');
-const comboCtrl  = require('../controllers/combinationController');
-const classCtrl  = require('../controllers/classController');
-const noteCtrl   = require('../controllers/noteController');
-const subAdminCtrl = require('../controllers/subAdminController');
-const requestCtrl  = require('../controllers/requestController');
+const express             = require('express');
+const router              = express.Router();
+const { isAdmin }         = require('../middleware/auth');
+const authController      = require('../controllers/authController');
+const dashboardController = require('../controllers/dashboardController');
+const levelController     = require('../controllers/levelController');
+const combinationController = require('../controllers/combinationController');
+const classController     = require('../controllers/classController');
+const noteController      = require('../controllers/noteController');
 
 // Auth
-router.get('/login', isGuest, auth.showLogin);
-router.post('/login', isGuest, auth.login);
-router.get('/logout', isAuthenticated, auth.logout);
+router.get('/login', authController.getLogin);
+router.post('/login', authController.login);
+router.get('/logout', authController.logout);
+
+// Protected routes
+router.use(isAdmin);
 
 // Dashboard
-router.get('/', isAuthenticated, (req, res) => res.redirect('/admin/dashboard'));
-router.get('/dashboard', isAuthenticated, dash.dashboard);
+router.get('/dashboard', dashboardController.index);
 
 // Settings
-router.get('/settings', isAuthenticated, dash.showSettings);
-router.post('/settings/profile', isAuthenticated, dash.updateProfile);
-router.post('/settings/password', isAuthenticated, dash.updatePassword);
-router.post('/settings/avatar', isAuthenticated, uploadAvatar.single('avatar'), dash.uploadAvatar);
-router.post('/settings/avatar/remove', isAuthenticated, dash.removeAvatar);
+router.get('/settings', dashboardController.getSettings);
+router.post('/settings/profile', dashboardController.updateProfile);
+router.post('/settings/password', dashboardController.updatePassword);
+router.post('/settings/avatar', dashboardController.uploadAvatar);
+router.post('/settings/avatar/remove', dashboardController.removeAvatar);
 
-// Change Requests (super only)
-router.get('/requests', isAuthenticated, isSuperAdmin, requestCtrl.index);
-router.post('/requests/:id/approve', isAuthenticated, isSuperAdmin, requestCtrl.approve);
-router.post('/requests/:id/reject', isAuthenticated, isSuperAdmin, requestCtrl.reject);
+// Education Levels
+router.get('/levels', levelController.index);
+router.get('/levels/create', levelController.create);
+router.post('/levels', levelController.store);
+router.get('/levels/:id/edit', levelController.edit);
+router.post('/levels/:id', levelController.update);
+router.post('/levels/:id/delete', levelController.destroy);
 
-// Sub-Admin Management (super only)
-router.get('/subadmins', isAuthenticated, isSuperAdmin, subAdminCtrl.index);
-router.get('/subadmins/create', isAuthenticated, isSuperAdmin, subAdminCtrl.create);
-router.post('/subadmins', isAuthenticated, isSuperAdmin, subAdminCtrl.store);
-router.get('/subadmins/:id/edit', isAuthenticated, isSuperAdmin, subAdminCtrl.edit);
-router.post('/subadmins/:id', isAuthenticated, isSuperAdmin, subAdminCtrl.update);
-router.post('/subadmins/:id/delete', isAuthenticated, isSuperAdmin, subAdminCtrl.destroy);
+// Combinations (under a level)
+router.get('/levels/:levelId/combinations', combinationController.index);
+router.get('/levels/:levelId/combinations/create', combinationController.create);
+router.post('/levels/:levelId/combinations', combinationController.store);
+router.get('/levels/:levelId/combinations/:id/edit', combinationController.edit);
+router.post('/levels/:levelId/combinations/:id', combinationController.update);
+router.post('/levels/:levelId/combinations/:id/delete', combinationController.destroy);
 
-// Levels (super only — sub-admins can't create/edit levels)
-router.get('/levels', isAuthenticated, isSuperAdmin, levelCtrl.index);
-router.get('/levels/create', isAuthenticated, isSuperAdmin, levelCtrl.create);
-router.post('/levels', isAuthenticated, isSuperAdmin, levelCtrl.store);
-router.get('/levels/:id/edit', isAuthenticated, isSuperAdmin, levelCtrl.edit);
-router.post('/levels/:id', isAuthenticated, isSuperAdmin, levelCtrl.update);
-router.post('/levels/:id/delete', isAuthenticated, isSuperAdmin, levelCtrl.destroy);
+// Classes (under a combination)
+router.get('/combinations/:comboId/classes', classController.index);
+router.get('/combinations/:comboId/classes/create', classController.create);
+router.post('/combinations/:comboId/classes', classController.store);
+router.get('/combinations/:comboId/classes/:id/edit', classController.edit);
+router.post('/combinations/:comboId/classes/:id', classController.update);
+router.post('/combinations/:comboId/classes/:id/delete', classController.destroy);
 
-// Combinations — sub-admin can only access their assigned level
-router.get('/levels/:levelId/combinations', isAuthenticated, canAccessLevel, comboCtrl.index);
-router.get('/levels/:levelId/combinations/create', isAuthenticated, canAccessLevel, comboCtrl.create);
-router.post('/levels/:levelId/combinations', isAuthenticated, canAccessLevel, comboCtrl.store);
-router.get('/levels/:levelId/combinations/:id/edit', isAuthenticated, canAccessLevel, comboCtrl.edit);
-router.post('/levels/:levelId/combinations/:id', isAuthenticated, canAccessLevel, comboCtrl.update);
-router.post('/levels/:levelId/combinations/:id/delete', isAuthenticated, canAccessLevel, comboCtrl.destroy);
-
-// Classes — sub-admin access controlled via combination's level
-router.get('/levels/:levelId/combinations/:comboId/classes', isAuthenticated, canAccessLevel, classCtrl.index);
-router.get('/levels/:levelId/combinations/:comboId/classes/create', isAuthenticated, canAccessLevel, classCtrl.create);
-router.post('/levels/:levelId/combinations/:comboId/classes', isAuthenticated, canAccessLevel, classCtrl.store);
-router.get('/levels/:levelId/combinations/:comboId/classes/:id/edit', isAuthenticated, canAccessLevel, classCtrl.edit);
-router.post('/levels/:levelId/combinations/:comboId/classes/:id', isAuthenticated, canAccessLevel, classCtrl.update);
-router.post('/levels/:levelId/combinations/:comboId/classes/:id/delete', isAuthenticated, canAccessLevel, classCtrl.destroy);
-
-// Notes
-router.get('/levels/:levelId/combinations/:comboId/classes/:classId/notes', isAuthenticated, canAccessLevel, noteCtrl.index);
-router.get('/levels/:levelId/combinations/:comboId/classes/:classId/notes/create', isAuthenticated, canAccessLevel, noteCtrl.create);
-router.post('/levels/:levelId/combinations/:comboId/classes/:classId/notes', isAuthenticated, canAccessLevel, upload.single('file'), noteCtrl.store);
-router.get('/levels/:levelId/combinations/:comboId/classes/:classId/notes/:id/edit', isAuthenticated, canAccessLevel, noteCtrl.edit);
-router.post('/levels/:levelId/combinations/:comboId/classes/:classId/notes/:id', isAuthenticated, canAccessLevel, upload.single('file'), noteCtrl.update);
-router.post('/levels/:levelId/combinations/:comboId/classes/:classId/notes/:id/delete', isAuthenticated, canAccessLevel, noteCtrl.destroy);
+// Notes (under a class)
+router.get('/classes/:classId/notes', noteController.index);
+router.get('/classes/:classId/notes/create', noteController.create);
+router.post('/classes/:classId/notes', noteController.store);
+router.get('/classes/:classId/notes/:id/edit', noteController.edit);
+router.post('/classes/:classId/notes/:id', noteController.update);
+router.post('/classes/:classId/notes/:id/delete', noteController.destroy);
 
 module.exports = router;

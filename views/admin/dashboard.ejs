@@ -1,154 +1,71 @@
-<div class="admin-page-header">
-  <div>
-    <h1 class="admin-page-title">Dashboard</h1>
-    <p class="admin-page-sub">Welcome back, <strong><%= admin ? admin.name : 'Admin' %></strong></p>
+<div class="admin-page">
+  <div class="admin-page-header">
+    <h1>Dashboard</h1>
+    <p>Welcome back, <%= locals.adminName %>!</p>
   </div>
-  <a href="/admin/levels" class="btn-primary">+ Add Content</a>
-</div>
 
-<!-- Pending requests alert for super admin -->
-<% if (typeof isSuper !== 'undefined' && isSuper && typeof subAdmins !== 'undefined') { %>
-<% if (typeof pendingRequestCount !== 'undefined' && pendingRequestCount > 0) { %>
-<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:1rem 1.5rem;margin-bottom:1.5rem;display:flex;align-items:center;justify-content:space-between;gap:1rem">
-  <div style="display:flex;align-items:center;gap:.75rem">
-    <span style="font-size:1.5rem">⏳</span>
-    <div>
-      <strong style="color:#92400e"><%= pendingRequestCount %> pending request<%= pendingRequestCount > 1 ? 's' : '' %> from sub-admins</strong>
-      <p style="font-size:.85rem;color:#92400e;margin:.1rem 0 0">Review and approve or reject combination change requests</p>
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon">📝</div>
+      <div class="stat-value"><%= noteCount %></div>
+      <div class="stat-label">Total Notes</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">⬇️</div>
+      <div class="stat-value"><%= downloads %></div>
+      <div class="stat-label">Total Downloads</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">🎓</div>
+      <div class="stat-value"><%= levels.length %></div>
+      <div class="stat-label">Education Levels</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">📚</div>
+      <div class="stat-value"><%= combinations.length %></div>
+      <div class="stat-label">Combinations/Trades</div>
     </div>
   </div>
-  <a href="/admin/requests" style="background:#f59e0b;color:white;padding:.5rem 1.25rem;border-radius:8px;font-weight:700;font-size:.875rem;text-decoration:none;white-space:nowrap">Review Now →</a>
-</div>
-<% } %>
-<% } %>
 
-<!-- Stats -->
-<div class="stats-grid">
-  <div class="stat-card">
-    <div class="stat-icon" style="background:#ede9fe">🎓</div>
-    <div class="stat-info"><strong><%= levelCount %></strong><span>Levels</span></div>
-  </div>
-  <div class="stat-card">
-    <div class="stat-icon" style="background:#d1fae5">📚</div>
-    <div class="stat-info"><strong><%= comboCount %></strong><span>Combinations</span></div>
-  </div>
-  <div class="stat-card">
-    <div class="stat-icon" style="background:#fef3c7">🏫</div>
-    <div class="stat-info"><strong><%= classCount %></strong><span>Classes</span></div>
-  </div>
-  <div class="stat-card">
-    <div class="stat-icon" style="background:#fee2e2">📄</div>
-    <div class="stat-info"><strong><%= noteCount %></strong><span>Notes</span></div>
-  </div>
-  <% if (typeof isSuper !== 'undefined' && isSuper && typeof subAdmins !== 'undefined') { %>
-  <div class="stat-card" style="cursor:pointer" onclick="location.href='/admin/subadmins'">
-    <div class="stat-icon" style="background:#e0f2fe">👥</div>
-    <div class="stat-info"><strong><%= subAdmins.length %></strong><span>Sub-Admins</span></div>
-  </div>
-  <% } %>
-</div>
-
-<!-- Quick links -->
-<div class="card" style="margin-top:1.5rem">
-  <div class="card-header">
-    <h2>📋 Quick Access</h2>
-  </div>
-  <div style="display:flex;gap:0;flex-wrap:wrap">
-    <a href="/admin/levels" style="flex:1;min-width:180px;padding:1.5rem;border-right:1px solid var(--border);text-decoration:none;transition:background .2s" onmouseover="this.style.background='var(--surface)'" onmouseout="this.style.background='white'">
-      <div style="font-size:1.5rem;margin-bottom:.5rem">🎓</div>
-      <div style="font-weight:600;color:var(--ink);margin-bottom:.25rem">Levels</div>
-      <div style="font-size:.8rem;color:var(--muted)">O'Level, A'Level, TVET</div>
-    </a>
-    <% if (typeof isSuper !== 'undefined' && isSuper) { %>
-    <a href="/admin/subadmins" style="flex:1;min-width:180px;padding:1.5rem;border-right:1px solid var(--border);text-decoration:none;transition:background .2s" onmouseover="this.style.background='var(--surface)'" onmouseout="this.style.background='white'">
-      <div style="font-size:1.5rem;margin-bottom:.5rem">👥</div>
-      <div style="font-weight:600;color:var(--ink);margin-bottom:.25rem">Sub-Admins</div>
-      <div style="font-size:.8rem;color:var(--muted)">Manage level admins</div>
-    </a>
-    <a href="/admin/requests" style="flex:1;min-width:180px;padding:1.5rem;border-right:1px solid var(--border);text-decoration:none;transition:background .2s;position:relative" onmouseover="this.style.background='var(--surface)'" onmouseout="this.style.background='white'">
-      <% if (typeof pendingRequestCount !== 'undefined' && pendingRequestCount > 0) { %>
-        <span style="position:absolute;top:1rem;right:1rem;background:#f59e0b;color:white;border-radius:100px;padding:.1rem .5rem;font-size:.7rem;font-weight:700"><%= pendingRequestCount %></span>
-      <% } %>
-      <div style="font-size:1.5rem;margin-bottom:.5rem">📋</div>
-      <div style="font-weight:600;color:var(--ink);margin-bottom:.25rem">Requests</div>
-      <div style="font-size:.8rem;color:var(--muted)">Approve sub-admin changes</div>
-    </a>
-    <% } %>
-    <a href="/" target="_blank" style="flex:1;min-width:180px;padding:1.5rem;text-decoration:none;transition:background .2s" onmouseover="this.style.background='var(--surface)'" onmouseout="this.style.background='white'">
-      <div style="font-size:1.5rem;margin-bottom:.5rem">🌍</div>
-      <div style="font-weight:600;color:var(--ink);margin-bottom:.25rem">View Site</div>
-      <div style="font-size:.8rem;color:var(--muted)">Public student view</div>
-    </a>
-  </div>
-</div>
-
-<!-- Sub-admins table (super only) -->
-<% if (typeof isSuper !== 'undefined' && isSuper && typeof subAdmins !== 'undefined') { %>
-<div class="card" style="margin-top:1.5rem">
-  <div class="card-header">
-    <h2>👥 Sub-Admins</h2>
-    <a href="/admin/subadmins/create" class="btn btn-primary btn-sm">+ Add Sub-Admin</a>
-  </div>
-  <% if (subAdmins.length === 0) { %>
-    <div style="padding:2rem;text-align:center;color:var(--muted)">
-      <div style="font-size:2rem;margin-bottom:.5rem">👤</div>
-      <p>No sub-admins yet. <a href="/admin/subadmins/create" style="color:var(--primary)">Add one →</a></p>
+  <div class="quick-actions">
+    <h2>Quick Actions</h2>
+    <div class="action-grid">
+      <a href="/admin/levels" class="action-card">
+        <span>🎓</span>
+        <div>
+          <strong>Manage Structure</strong>
+          <p>Levels, combinations, classes</p>
+        </div>
+      </a>
+      <a href="/" target="_blank" class="action-card">
+        <span>🌐</span>
+        <div>
+          <strong>View Public Site</strong>
+          <p>See what students see</p>
+        </div>
+      </a>
+      <a href="/admin/settings" class="action-card">
+        <span>⚙️</span>
+        <div>
+          <strong>Settings</strong>
+          <p>Update profile & password</p>
+        </div>
+      </a>
     </div>
-  <% } else { %>
-  <div class="table-wrap">
-    <table>
-      <thead><tr><th>Name</th><th>Email</th><th>Assigned Level</th><th>Actions</th></tr></thead>
-      <tbody>
-        <% subAdmins.forEach(a => { %>
-        <tr>
-          <td>
-            <div style="display:flex;align-items:center;gap:.6rem">
-              <div style="width:32px;height:32px;border-radius:50%;background:#4f46e5;color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.8rem;flex-shrink:0"><%= a.name.charAt(0).toUpperCase() %></div>
-              <strong><%= a.name %></strong>
-            </div>
-          </td>
-          <td style="color:var(--muted);font-size:.875rem"><%= a.email %></td>
-          <td>
-            <% if (a.level_name) { %><span class="badge badge-primary"><%= a.level_name %></span>
-            <% } else { %><span style="color:var(--muted)">—</span><% } %>
-          </td>
-          <td>
-            <a href="/admin/subadmins/<%= a.id %>/edit" class="btn btn-secondary btn-sm">Edit</a>
-          </td>
-        </tr>
-        <% }) %>
-      </tbody>
-    </table>
   </div>
-  <div style="padding:.75rem 1.25rem;border-top:1px solid var(--border);text-align:right">
-    <a href="/admin/subadmins" style="font-size:.85rem;color:var(--primary);font-weight:600">Manage all →</a>
-  </div>
-  <% } %>
-</div>
-<% } %>
 
-<!-- Recent notes -->
-<% if (typeof recentNotes !== 'undefined' && recentNotes.length > 0) { %>
-<div class="card" style="margin-top:1.5rem">
-  <div class="card-header">
-    <h2>📄 Recent Notes</h2>
-    <a href="/" target="_blank" class="btn btn-secondary btn-sm">View Site →</a>
-  </div>
-  <div class="table-wrap">
-    <table>
-      <thead><tr><th>Title</th><th>Level</th><th>Combination</th><th>Class</th><th>Date</th></tr></thead>
-      <tbody>
-        <% recentNotes.forEach(note => { %>
-          <tr>
-            <td><strong><%= note.title %></strong></td>
-            <td><span class="badge badge-primary"><%= note.level_name %></span></td>
-            <td><%= note.combo_name %></td>
-            <td><%= note.class_name %></td>
-            <td style="color:var(--muted);font-size:.8rem"><%= new Date(note.created_at).toLocaleDateString() %></td>
-          </tr>
-        <% }) %>
-      </tbody>
-    </table>
+  <div class="levels-overview">
+    <h2>Education Levels</h2>
+    <div class="level-list">
+      <% levels.forEach(level => { %>
+      <div class="level-item" style="border-left: 4px solid <%= level.color %>">
+        <div class="level-item-info">
+          <span class="level-item-icon"><%= level.icon %></span>
+          <span class="level-item-name"><%= level.name %></span>
+        </div>
+        <a href="/admin/levels/<%= level.id %>/combinations" class="btn btn-sm">Manage →</a>
+      </div>
+      <% }) %>
+    </div>
   </div>
 </div>
-<% } %>

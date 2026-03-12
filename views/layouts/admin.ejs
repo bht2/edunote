@@ -3,129 +3,74 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><%= typeof title !== 'undefined' ? title : 'Admin — EduNote' %></title>
+  <title><%= title %></title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/admin.css">
 </head>
-<body>
-  <!-- Mobile topbar -->
-  <div class="admin-topbar">
-    <div class="admin-topbar-brand">📚 Edu<span>Note</span></div>
-    <button class="hamburger-btn" id="sidebarToggle">
+<body class="admin-body">
+
+  <!-- Mobile topbar (visible on small screens) -->
+  <div class="mobile-topbar" id="mobileTopbar">
+    <a href="/admin/dashboard" class="mobile-logo">📚 EduNote</a>
+    <button class="mobile-sidebar-btn" id="sidebarToggleBtn" aria-label="Toggle menu">
       <span></span><span></span><span></span>
     </button>
   </div>
 
-  <!-- Overlay -->
+  <!-- Sidebar overlay (mobile) -->
   <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-  <!-- Sidebar -->
-  <aside class="admin-sidebar" id="adminSidebar">
-    <div class="sidebar-logo">📚 Edu<span>Note</span></div>
-
-    <div class="sidebar-avatar">
-      <% if (admin && admin.avatar) { %>
-        <img src="/avatars/<%= admin.avatar %>" alt="Admin" class="sidebar-avatar-img">
-      <% } else { %>
-        <div class="sidebar-avatar-initial"><%= admin ? admin.name.charAt(0).toUpperCase() : 'A' %></div>
-      <% } %>
-      <div>
-        <div class="sidebar-avatar-name"><%= admin ? admin.name : 'Admin' %></div>
-        <div class="sidebar-avatar-role"><%= typeof session !== "undefined" && session.adminRole === "sub" ? "Level Admin" : "Super Admin" %></div>
+  <div class="admin-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="adminSidebar">
+      <div class="sidebar-header">
+        <a href="/admin/dashboard" class="sidebar-logo">
+          <span>📚</span> EduNote
+        </a>
+        <button class="sidebar-close-btn" id="sidebarCloseBtn" aria-label="Close menu">✕</button>
       </div>
-    </div>
-
-    <nav class="sidebar-nav">
-      <div class="sidebar-section-label">Overview</div>
-      <% if (typeof session !== "undefined" && session.adminRole === "super") { %>
-      <a href="/admin/dashboard" class="sidebar-link" id="nav-dashboard">
-        <span class="icon">📊</span> Dashboard
-      </a>
-      <% } %>
-
-      <div class="sidebar-section-label">Content</div>
-      <% if (typeof session !== 'undefined' && session.adminRole === 'super') { %>
-        <a href="/admin/levels" class="sidebar-link" id="nav-levels">
-          <span class="icon">🎓</span> Levels
-          <span style="margin-left:auto;font-size:.72rem;color:rgba(255,255,255,.35)">→ Combos → Classes → Notes</span>
+      <div class="sidebar-admin">
+        <% if (locals.adminAvatar && adminAvatar) { %>
+          <img src="<%= adminAvatar %>" alt="Avatar" class="admin-avatar">
+        <% } else { %>
+          <div class="admin-avatar-placeholder"><%= (locals.adminName || 'A')[0].toUpperCase() %></div>
+        <% } %>
+        <div class="admin-info">
+          <span class="admin-name"><%= locals.adminName || 'Admin' %></span>
+          <span class="admin-role">Administrator</span>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <a href="/admin/dashboard" class="nav-item <%= locals.title && title.includes('Dashboard') ? 'active' : '' %>">
+          <span class="nav-icon">🏠</span> Dashboard
         </a>
-      <% } else if (typeof session !== 'undefined' && session.adminLevelId) { %>
-        <a href="/admin/levels/<%= session.adminLevelId %>/combinations" class="sidebar-link" id="nav-levels">
-          <span class="icon">🎓</span> My Level
-          <span style="margin-left:auto;font-size:.72rem;color:rgba(255,255,255,.35)">→ Combos → Notes</span>
+        <div class="nav-section">ACADEMIC STRUCTURE</div>
+        <a href="/admin/levels" class="nav-item <%= locals.title && (title.includes('Level') || title.includes('Combination') || title.includes('Class')) ? 'active' : '' %>">
+          <span class="nav-icon">🎓</span> Education Levels
         </a>
-      <% } %>
-
-      <% if (typeof session !== 'undefined' && session.adminRole === 'super') { %>
-        <div class="sidebar-section-label">Administration</div>
-        <a href="/admin/subadmins" class="sidebar-link" id="nav-subadmins">
-          <span class="icon">👥</span> Sub-Admins
+        <div class="nav-section">ACCOUNT</div>
+        <a href="/admin/settings" class="nav-item <%= locals.title && title.includes('Settings') ? 'active' : '' %>">
+          <span class="nav-icon">⚙️</span> Settings
         </a>
-        <a href="/admin/requests" class="sidebar-link" id="nav-requests">
-          <span class="icon">📋</span> Requests
-          <% if (typeof pendingRequestCount !== 'undefined' && pendingRequestCount > 0) { %>
-            <span style="margin-left:auto;background:#f59e0b;color:white;border-radius:100px;padding:.1rem .5rem;font-size:.7rem;font-weight:700"><%= pendingRequestCount %></span>
-          <% } %>
+        <a href="/admin/logout" class="nav-item nav-logout">
+          <span class="nav-icon">🚪</span> Logout
         </a>
+      </nav>
+    </aside>
+
+    <!-- Main content -->
+    <div class="admin-main">
+      <% if (locals.success_msg && success_msg.length > 0) { %>
+        <div class="alert alert-success"><%= success_msg %></div>
       <% } %>
-
-      <div class="sidebar-section-label">Account</div>
-      <a href="/admin/settings" class="sidebar-link" id="nav-settings">
-        <span class="icon">⚙️</span> Settings
-      </a>
-    </nav>
-
-    <div class="sidebar-footer">
-      <a href="/admin/logout" class="sidebar-link" style="color:rgba(239,68,68,.8)">
-        <span class="icon">🚪</span> Logout
-      </a>
-    </div>
-  </aside>
-
-  <!-- Main content -->
-  <main class="admin-main">
-    <div class="admin-content">
-      <% if (locals.success && success.length > 0) { %>
-        <div class="flash flash-success">✓ <%= success[0] %></div>
+      <% if (locals.error_msg && error_msg.length > 0) { %>
+        <div class="alert alert-error"><%= error_msg %></div>
       <% } %>
-      <% if (locals.error && error.length > 0) { %>
-        <div class="flash flash-error">⚠ <%= error[0] %></div>
-      <% } %>
-
       <%- body %>
     </div>
-  </main>
+  </div>
 
-  <script>
-    // Sidebar toggle
-    const sidebarToggle = document.getElementById('sidebarToggle');
-    const sidebar = document.getElementById('adminSidebar');
-    const overlay = document.getElementById('sidebarOverlay');
-
-    function openSidebar() {
-      sidebar.classList.add('open');
-      overlay.classList.add('active');
-    }
-    function closeSidebar() {
-      sidebar.classList.remove('open');
-      overlay.classList.remove('active');
-    }
-
-    sidebarToggle.addEventListener('click', () => sidebar.classList.contains('open') ? closeSidebar() : openSidebar());
-    overlay.addEventListener('click', closeSidebar);
-
-    // Active nav detection — purely client-side, no EJS
-    const path = window.location.pathname;
-    const navMap = {
-      'nav-dashboard':  '/admin/dashboard',
-      'nav-levels':     '/admin/levels',
-      'nav-subadmins':  '/admin/subadmins',
-      'nav-requests':   '/admin/requests',
-      'nav-settings':   '/admin/settings'
-    };
-    Object.entries(navMap).forEach(([id, href]) => {
-      const el = document.getElementById(id);
-      if (el && path.startsWith(href)) el.classList.add('active');
-    });
-  </script>
+  <script src="/js/admin.js"></script>
 </body>
 </html>

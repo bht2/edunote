@@ -3,50 +3,66 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><%= typeof title !== 'undefined' ? title : 'EduNote' %></title>
-  <meta name="description" content="Free educational notes for Rwanda students — O'Level, A'Level, and TVET">
+  <title><%= title %></title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;0,9..144,700;1,9..144,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/public.css">
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📚</text></svg>">
-  <%- typeof style !== 'undefined' ? style : '' %>
 </head>
 <body>
   <nav class="navbar">
-    <div class="navbar-inner">
-      <a href="/" class="navbar-brand">
-        📚 Edu<span class="brand-dot">Note</span>
+    <div class="nav-container">
+      <a href="/" class="nav-logo">
+        <span class="logo-icon">\u2726</span>
+        <span>Edu<strong>Note</strong></span>
       </a>
-      <ul class="navbar-links">
-        <li><a href="/" class="<%= typeof currentPage !== 'undefined' && currentPage === 'home' ? 'active' : '' %>">Home</a></li>
-        <li><a href="/browse" class="<%= typeof currentPage !== 'undefined' && currentPage === 'browse' ? 'active' : '' %>">Browse Notes</a></li>
-        <li><a href="/browse" class="btn-nav">Get Notes</a></li>
+      <ul class="nav-links">
+        <li><a href="/">Home</a></li>
+        <li><a href="/notes">Browse Notes</a></li>
       </ul>
-      <button class="navbar-hamburger" id="hamburger" aria-label="Toggle menu">
+      <div class="nav-cta">
+        <a href="/notes" class="btn btn-primary">Get Notes</a>
+      </div>
+      <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Toggle menu">
         <span></span><span></span><span></span>
       </button>
     </div>
-    <div class="navbar-mobile" id="mobileNav">
-      <a href="/">Home</a>
-      <a href="/browse">Browse Notes</a>
-      <a href="/browse" class="btn-nav-mobile">Get Notes</a>
-    </div>
   </nav>
 
-  <% if (locals.success && success.length > 0) { %>
-    <div class="flash-wrap"><div class="flash flash-success">✓ <%= success[0] %></div></div>
+  <div class="mobile-menu" id="mobileMenu">
+    <a href="/">Home</a>
+    <a href="/notes">Browse Notes</a>
+    <a href="/notes" class="btn btn-primary">Get Notes</a>
+  </div>
+
+  <% if (success && success.length > 0) { %>
+    <div class="flash flash-success"><%= success %></div>
   <% } %>
-  <% if (locals.error && error.length > 0) { %>
-    <div class="flash-wrap"><div class="flash flash-error">⚠ <%= error[0] %></div></div>
+  <% if (error && error.length > 0) { %>
+    <div class="flash flash-error"><%= error %></div>
   <% } %>
 
   <%- body %>
 
   <footer class="footer">
-    <p>© <%= new Date().getFullYear() %> EduNote &mdash; Free educational notes for Rwanda students &mdash;
-      <a href="/admin/login">Admin</a>
-    </p>
+    <div class="footer-container">
+      <div class="footer-brand">
+        <a href="/" class="nav-logo"><span class="logo-icon">\u2726</span><span>Edu<strong>Note</strong></span></a>
+        <p>Quality educational resources, freely accessible to every student.</p>
+      </div>
+      <div class="footer-links">
+        <h4>Quick Links</h4>
+        <ul>
+          <li><a href="/">Home</a></li>
+          <li><a href="/notes">Browse Notes</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; <%= new Date().getFullYear() %> EduNote. All rights reserved.</p>
+    </div>
   </footer>
 
   <script src="/js/public.js"></script>
-  <%- typeof script !== 'undefined' ? script : '' %>
 </body>
 </html>

@@ -1,26 +1,37 @@
-// Mobile hamburger menu
-const hamburger = document.getElementById('hamburger');
-const mobileNav = document.getElementById('mobileNav');
+// ── Mobile menu toggle ──
+const mobileBtn  = document.getElementById('mobileMenuBtn');
+const mobileMenu = document.getElementById('mobileMenu');
 
-if (hamburger && mobileNav) {
-  hamburger.addEventListener('click', () => {
-    mobileNav.classList.toggle('open');
-    const spans = hamburger.querySelectorAll('span');
-    if (mobileNav.classList.contains('open')) {
-      spans[0].style.transform = 'rotate(45deg) translate(5px, 5px)';
-      spans[1].style.opacity = '0';
-      spans[2].style.transform = 'rotate(-45deg) translate(5px, -5px)';
-    } else {
-      spans.forEach(s => { s.style.transform = ''; s.style.opacity = ''; });
+if (mobileBtn && mobileMenu) {
+  mobileBtn.addEventListener('click', () => {
+    const open = mobileMenu.classList.toggle('open');
+    mobileBtn.classList.toggle('open', open);
+    mobileBtn.setAttribute('aria-expanded', open);
+  });
+
+  // Close on outside click
+  document.addEventListener('click', (e) => {
+    if (!mobileBtn.contains(e.target) && !mobileMenu.contains(e.target)) {
+      mobileMenu.classList.remove('open');
+      mobileBtn.classList.remove('open');
     }
+  });
+
+  // Close on nav link click
+  mobileMenu.querySelectorAll('a').forEach(a => {
+    a.addEventListener('click', () => {
+      mobileMenu.classList.remove('open');
+      mobileBtn.classList.remove('open');
+    });
   });
 }
 
-// Auto-hide flash messages
-setTimeout(() => {
-  document.querySelectorAll('.flash').forEach(el => {
-    el.style.transition = 'opacity .5s';
-    el.style.opacity = '0';
-    setTimeout(() => el.remove(), 500);
-  });
-}, 4000);
+// ── Navbar scroll shadow ──
+const navbar = document.querySelector('.navbar');
+if (navbar) {
+  window.addEventListener('scroll', () => {
+    navbar.style.boxShadow = window.scrollY > 10
+      ? '0 4px 20px rgba(0,0,0,0.3)'
+      : 'none';
+  }, { passive: true });
+}

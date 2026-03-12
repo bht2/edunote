@@ -1,103 +1,204 @@
-<div class="admin-page-header">
-  <div>
-    <h1 class="admin-page-title">Upload Note</h1>
-    <div class="admin-breadcrumb">
-      <a href="<%= typeof session !== 'undefined' && session.adminRole === 'sub' ? '/admin/levels/' + session.adminLevelId + '/combinations' : '/admin/levels' %>">Levels</a> ›
-      <a href="/admin/levels/<%= level.id %>/combinations"><%= level.name %></a> ›
-      <a href="/admin/levels/<%= level.id %>/combinations/<%= combo.id %>/classes"><%= combo.name %></a> ›
-      <a href="/admin/levels/<%= level.id %>/combinations/<%= combo.id %>/classes/<%= cls.id %>/notes"><%= cls.name %></a> ›
-      Upload
+<div class="admin-page">
+  <div class="admin-page-header">
+    <div>
+      <div class="breadcrumb-admin">
+        <a href="/admin/classes/<%= cls.id %>/notes"><%= combo.name %> · <%= cls.name %></a> › Upload Note
+      </div>
+      <h1>Upload Note</h1>
     </div>
+    <a href="/admin/classes/<%= cls.id %>/notes" class="btn btn-secondary">← Back</a>
   </div>
-  <a href="/admin/levels/<%= level.id %>/combinations/<%= combo.id %>/classes/<%= cls.id %>/notes" class="btn-outline">← Back</a>
-</div>
 
-<div class="admin-form-card" style="max-width:700px">
-  <form action="/admin/levels/<%= level.id %>/combinations/<%= combo.id %>/classes/<%= cls.id %>/notes" method="POST" enctype="multipart/form-data" id="uploadForm">
+  <div class="form-card">
+    <form id="uploadForm" action="/admin/classes/<%= cls.id %>/notes" method="POST" enctype="multipart/form-data">
 
-    <div class="form-group">
-      <label>Note Title <span style="color:var(--error)">*</span></label>
-      <input type="text" name="title" class="form-input" placeholder="e.g. Introduction to Algebra — Chapter 1" required>
-    </div>
-
-    <div class="form-group">
-      <label>Description <span style="color:var(--muted);font-weight:400">(optional)</span></label>
-      <textarea name="description" class="form-input" rows="3" placeholder="Brief description of what this note covers..." style="resize:vertical"></textarea>
-    </div>
-
-    <div class="form-group">
-      <label>File <span style="color:var(--error)">*</span></label>
-      <label class="upload-zone" id="uploadZone" for="fileInput">
-        <input type="file" name="file" accept=".pdf,.doc,.docx,.ppt,.pptx,.txt" required id="fileInput">
-        <div class="upload-zone-icon">📁</div>
-        <div class="upload-zone-text">Click to choose file or drag & drop</div>
-        <div class="upload-zone-sub">PDF, DOC, DOCX, PPT, PPTX, TXT — max 50MB</div>
-      </label>
-      <div class="upload-file-selected" id="fileSelected">
-        <span>📄</span>
-        <span id="fileName">No file selected</span>
-        <span style="margin-left:auto;font-size:.78rem;color:#065f46" id="fileSize"></span>
+      <div class="form-group">
+        <label>Title <span class="required">*</span></label>
+        <input type="text" name="title" placeholder="e.g. Algebra Notes Chapter 1" required>
       </div>
-      <div class="upload-progress" id="uploadProgress">
-        <div class="upload-progress-bar" id="progressBar" style="width:0%"></div>
-      </div>
-    </div>
 
-    <div class="form-actions">
-      <button type="submit" class="btn btn-primary" id="submitBtn">
-        <span id="submitText">📤 Upload Note</span>
-      </button>
-      <a href="/admin/levels/<%= level.id %>/combinations/<%= combo.id %>/classes/<%= cls.id %>/notes" class="btn btn-outline">Cancel</a>
-    </div>
-  </form>
+      <div class="form-group">
+        <label>Subject</label>
+        <input type="text" name="subject" placeholder="e.g. Mathematics, Physics">
+      </div>
+
+      <div class="form-group">
+        <label>Description</label>
+        <textarea name="description" rows="3" placeholder="Brief description of the note content"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>File <span class="required">*</span></label>
+        <div class="upload-zone" id="uploadZone">
+          <input type="file" id="noteFile" name="note_file" accept=".pdf,.doc,.docx,.ppt,.pptx,.txt" required>
+
+          <div class="uz-empty" id="uzEmpty">
+            <div class="uz-icon">
+              <svg width="38" height="38" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+              </svg>
+            </div>
+            <p class="uz-title">Drop file here or <span class="uz-link">click to browse</span></p>
+            <p class="uz-sub">PDF · DOC · DOCX · PPT · PPTX · TXT &nbsp;·&nbsp; Max 50 MB</p>
+          </div>
+
+          <div class="uz-preview" id="uzPreview" style="display:none">
+            <div class="uz-file-icon" id="uzFileIcon">PDF</div>
+            <div class="uz-file-info">
+              <p class="uz-file-name" id="uzFileName">—</p>
+              <p class="uz-file-size" id="uzFileSize">—</p>
+            </div>
+            <button type="button" class="uz-clear-btn" id="uzClear" title="Remove file">
+              <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="upload-progress-wrap" id="uploadProgress" style="display:none">
+        <div class="up-header">
+          <div class="up-label-wrap">
+            <div class="up-spinner"></div>
+            <span class="up-label" id="upStatus">Uploading…</span>
+          </div>
+          <span class="up-pct" id="upPct">0%</span>
+        </div>
+        <div class="up-bar-track">
+          <div class="up-bar-fill" id="upBarFill"></div>
+        </div>
+      </div>
+
+      <div class="form-actions" id="formActions">
+        <button type="submit" class="btn btn-primary btn-upload" id="submitBtn" disabled>
+          <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+          </svg>
+          Upload Note
+        </button>
+        <a href="/admin/classes/<%= cls.id %>/notes" class="btn btn-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
 </div>
 
 <script>
-const fileInput = document.getElementById('fileInput');
-const fileSelected = document.getElementById('fileSelected');
-const fileName = document.getElementById('fileName');
-const fileSize = document.getElementById('fileSize');
-const uploadZone = document.getElementById('uploadZone');
-const uploadProgress = document.getElementById('uploadProgress');
-const progressBar = document.getElementById('progressBar');
-const submitBtn = document.getElementById('submitBtn');
-const submitText = document.getElementById('submitText');
+(function() {
+  const zone     = document.getElementById('uploadZone');
+  const input    = document.getElementById('noteFile');
+  const empty    = document.getElementById('uzEmpty');
+  const preview  = document.getElementById('uzPreview');
+  const iconEl   = document.getElementById('uzFileIcon');
+  const nameEl   = document.getElementById('uzFileName');
+  const sizeEl   = document.getElementById('uzFileSize');
+  const clearBtn = document.getElementById('uzClear');
+  const submitBtn= document.getElementById('submitBtn');
+  const form     = document.getElementById('uploadForm');
+  const progress = document.getElementById('uploadProgress');
+  const pctEl    = document.getElementById('upPct');
+  const barFill  = document.getElementById('upBarFill');
+  const statusEl = document.getElementById('upStatus');
+  const actionsEl= document.getElementById('formActions');
 
-fileInput.addEventListener('change', function() {
-  if (this.files.length > 0) {
-    const f = this.files[0];
-    fileName.textContent = f.name;
-    fileSize.textContent = (f.size / 1024 / 1024).toFixed(2) + ' MB';
-    fileSelected.style.display = 'flex';
-    uploadZone.style.borderColor = 'var(--success)';
-    uploadZone.style.background = 'var(--success-light)';
+  const EXT = {
+    pdf:  { bg:'#fee2e2', color:'#dc2626' },
+    doc:  { bg:'#dbeafe', color:'#1d4ed8' },
+    docx: { bg:'#dbeafe', color:'#1d4ed8' },
+    ppt:  { bg:'#ffedd5', color:'#c2410c' },
+    pptx: { bg:'#ffedd5', color:'#c2410c' },
+    txt:  { bg:'#f1f5f9', color:'#475569' },
+  };
+
+  function fmtSize(b) {
+    if (b < 1024) return b + ' B';
+    if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
+    return (b/1048576).toFixed(2) + ' MB';
   }
-});
 
-uploadZone.addEventListener('dragover', e => {
-  e.preventDefault();
-  uploadZone.classList.add('drag-over');
-});
-uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
-uploadZone.addEventListener('drop', e => {
-  e.preventDefault();
-  uploadZone.classList.remove('drag-over');
-  if (e.dataTransfer.files.length > 0) {
-    fileInput.files = e.dataTransfer.files;
-    fileInput.dispatchEvent(new Event('change'));
+  function showFile(file) {
+    const ext = file.name.split('.').pop().toLowerCase();
+    const s   = EXT[ext] || { bg:'#f1f5f9', color:'#475569' };
+    iconEl.textContent       = ext.toUpperCase();
+    iconEl.style.background  = s.bg;
+    iconEl.style.color       = s.color;
+    nameEl.textContent       = file.name;
+    sizeEl.textContent       = fmtSize(file.size);
+    empty.style.display      = 'none';
+    preview.style.display    = 'flex';
+    zone.classList.add('has-file');
+    submitBtn.disabled       = false;
   }
-});
 
-document.getElementById('uploadForm').addEventListener('submit', function() {
-  if (!fileInput.files.length) return;
-  submitText.textContent = '⏳ Uploading...';
-  submitBtn.disabled = true;
-  uploadProgress.style.display = 'block';
-  // Animate progress bar
-  let w = 0;
-  const interval = setInterval(() => {
-    w = Math.min(w + Math.random() * 8, 85);
-    progressBar.style.width = w + '%';
-  }, 200);
-});
+  function clearFile() {
+    input.value              = '';
+    empty.style.display      = 'flex';
+    preview.style.display    = 'none';
+    zone.classList.remove('has-file');
+    submitBtn.disabled       = true;
+  }
+
+  input.addEventListener('change', () => { if (input.files[0]) showFile(input.files[0]); });
+  clearBtn.addEventListener('click', (e) => { e.stopPropagation(); clearFile(); });
+  zone.addEventListener('click', (e) => {
+    if (!clearBtn.contains(e.target)) input.click();
+  });
+
+  zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('drag-over'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+  zone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    zone.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      try { const dt = new DataTransfer(); dt.items.add(file); input.files = dt.files; } catch(e) {}
+      showFile(file);
+    }
+  });
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    if (!input.files[0]) return;
+
+    actionsEl.style.display  = 'none';
+    progress.style.display   = 'block';
+
+    const xhr = new XMLHttpRequest();
+
+    xhr.upload.addEventListener('progress', (evt) => {
+      if (!evt.lengthComputable) return;
+      const pct = Math.round((evt.loaded / evt.total) * 100);
+      pctEl.textContent    = pct + '%';
+      barFill.style.width  = pct + '%';
+      if      (pct < 30)  statusEl.textContent = 'Uploading file…';
+      else if (pct < 70)  statusEl.textContent = 'Almost there…';
+      else if (pct < 100) statusEl.textContent = 'Finalizing…';
+      else                statusEl.textContent = 'Processing…';
+    });
+
+    xhr.addEventListener('load', () => {
+      pctEl.textContent    = '100%';
+      barFill.style.width  = '100%';
+      barFill.classList.add('done');
+      statusEl.textContent = '✓ Upload complete! Redirecting…';
+      document.querySelector('.up-spinner').style.display = 'none';
+      setTimeout(() => {
+        if (xhr.responseURL) window.location.href = xhr.responseURL;
+        else window.location.reload();
+      }, 600);
+    });
+
+    xhr.addEventListener('error', () => {
+      barFill.classList.add('error');
+      statusEl.textContent = '✗ Upload failed — please try again.';
+      document.querySelector('.up-spinner').style.display = 'none';
+      progress.style.display  = 'none';
+      actionsEl.style.display = 'flex';
+      submitBtn.disabled = false;
+    });
+
+    xhr.open('POST', form.action);
+    xhr.send(new FormData(form));
+  });
+})();
 </script>

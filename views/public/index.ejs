@@ -1,125 +1,123 @@
-<!-- EduNote Homepage -->
+<!-- Hero -->
 <section class="hero">
-  <div class="hero-grid"></div>
-  <div class="hero-inner">
-    <div class="hero-content">
-      <div class="hero-badge">🇷🇼 Rwanda Education Platform</div>
-      <h1 class="hero-title">
-        Free Notes for<br>
-        <em>Every Student</em><br>
-        in Rwanda
-      </h1>
-      <p class="hero-desc">
-        Access curriculum-aligned notes for O'Level, A'Level, and TVET programs — totally free. Download or read online.
-      </p>
-      <div class="hero-actions">
-        <a href="/browse" class="btn-hero-primary">📚 Get Notes Free</a>
-        <a href="/browse" class="btn-hero-secondary">Browse by Level →</a>
-      </div>
-      <div class="hero-stats">
-        <div class="hero-stat">
-          <strong><%= noteCount || '0' %>+</strong>
-          <span>Notes</span>
-        </div>
-        <div class="hero-stat">
-          <strong><%= levels.length %></strong>
-          <span>Levels</span>
-        </div>
-        <div class="hero-stat">
-          <strong><%= comboCount || '0' %>+</strong>
-          <span>Subjects</span>
-        </div>
-        <div class="hero-stat">
-          <strong>100%</strong>
-          <span>Free</span>
-        </div>
-      </div>
+  <div class="hero-bg">
+    <div class="hero-orb hero-orb-1"></div>
+    <div class="hero-orb hero-orb-2"></div>
+    <div class="hero-grid"></div>
+  </div>
+  <div class="hero-content">
+    <div class="hero-badge">Free Educational Resources</div>
+    <h1 class="hero-title">Learn Smarter,<br><em>Study Better</em></h1>
+    <p class="hero-subtitle">
+      Pick your subject, choose your level, and download high-quality notes instantly.
+      No account needed \u2014 completely free.
+    </p>
+    <div class="hero-actions">
+      <a href="/notes" class="btn btn-hero-primary">
+        <span>Get Notes</span>
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+      </a>
+      <a href="#subjects" class="btn btn-hero-secondary">Browse Subjects</a>
     </div>
-    <div class="hero-visual">
-      <div class="floating-card">
-        <div class="fc-icon" style="background:rgba(99,102,241,.25)">📖</div>
-        <div class="fc-text">
-          <strong>O'Level Notes</strong>
-          <span>S1 — S3 Curriculum</span>
-        </div>
-      </div>
-      <div class="floating-card">
-        <div class="fc-icon" style="background:rgba(16,185,129,.2)">🎓</div>
-        <div class="fc-text">
-          <strong>A'Level Combinations</strong>
-          <span>MPC, PCB, MPG & more</span>
-        </div>
-      </div>
-      <div class="floating-card">
-        <div class="fc-icon" style="background:rgba(245,158,11,.2)">🔧</div>
-        <div class="fc-text">
-          <strong>TVET Trades</strong>
-          <span>L3, L4, L5 Levels</span>
-        </div>
-      </div>
+    <div class="hero-stats">
+      <div class="stat"><strong><%= sectors.length %></strong><span>Subjects</span></div>
+      <div class="stat-divider"></div>
+      <div class="stat"><strong><%= levels.length %></strong><span>Levels</span></div>
+      <div class="stat-divider"></div>
+      <div class="stat"><strong>100%</strong><span>Free</span></div>
+    </div>
+  </div>
+  <div class="hero-visual">
+    <div class="floating-card card-1">
+      <div class="fc-icon" style="background:#6366f1">\u2211</div>
+      <div><p>Calculus Notes</p><span>High School \u00b7 Math</span></div>
+    </div>
+    <div class="floating-card card-2">
+      <div class="fc-icon" style="background:#0ea5e9">\u269b</div>
+      <div><p>Quantum Physics</p><span>University \u00b7 Physics</span></div>
+    </div>
+    <div class="floating-card card-3">
+      <div class="fc-icon" style="background:#10b981">{ }</div>
+      <div><p>Data Structures</p><span>University \u00b7 CS</span></div>
     </div>
   </div>
 </section>
 
-<section class="section" style="background: var(--white);">
-  <div class="section-inner">
-    <div class="section-header">
-      <div class="section-eyebrow">Education Levels</div>
-      <h2 class="section-title">Choose Your Level</h2>
-      <p class="section-desc">Find notes tailored to Rwanda's national curriculum for your education level.</p>
-    </div>
-    <div class="levels-grid">
-      <% levels.forEach(level => { %>
-        <a href="/browse/<%= level.slug %>" class="level-card" style="--card-color: <%= level.color %>">
-          <div class="level-card-icon">
-            <% if (level.name.includes("O'Level") || level.name.toLowerCase().includes('ordinary')) { %>📘
-            <% } else if (level.name.includes("A'Level") || level.name.toLowerCase().includes('advanced')) { %>🎓
-            <% } else if (level.name.toLowerCase().includes('tvet')) { %>🔧
-            <% } else { %>📚<% } %>
-          </div>
-          <h3><%= level.name %></h3>
-          <p><%= level.description || 'Browse combinations and access notes for this level.' %></p>
-          <div class="level-card-arrow">→</div>
-        </a>
-      <% }) %>
-      <% if (levels.length === 0) { %>
-        <div class="empty-state" style="grid-column:1/-1">
-          <div class="empty-icon">📭</div>
-          <h3>No levels yet</h3>
-          <p>The admin will add content soon.</p>
-        </div>
-      <% } %>
-    </div>
-  </div>
-</section>
-
-<section class="section" style="background: var(--surface);">
-  <div class="section-inner">
-    <div class="section-header">
-      <div class="section-eyebrow">How It Works</div>
-      <h2 class="section-title">Start Learning in 3 Steps</h2>
-    </div>
-    <div class="steps-grid">
-      <div class="step-card">
+<!-- How It Works -->
+<section class="how-it-works">
+  <div class="container">
+    <div class="steps-row">
+      <div class="step">
         <div class="step-num">1</div>
-        <h4>Choose Your Level</h4>
-        <p>Select O'Level, A'Level, or TVET based on your current education program.</p>
+        <div class="step-icon">\u25c8</div>
+        <h4>Choose a Subject</h4>
+        <p>Pick from Mathematics, Physics, Computer Science and more</p>
       </div>
-      <div class="step-card">
+      <div class="step-arrow">\u2192</div>
+      <div class="step">
         <div class="step-num">2</div>
-        <h4>Pick Combination / Trade</h4>
-        <p>Select your combination (e.g. MPC, PCB) or TVET trade (e.g. SOD, CSA).</p>
+        <div class="step-icon">\u25d1</div>
+        <h4>Select Your Level</h4>
+        <p>Primary, Middle School, High School, University or Professional</p>
       </div>
-      <div class="step-card">
+      <div class="step-arrow">\u2192</div>
+      <div class="step">
         <div class="step-num">3</div>
-        <h4>Select Your Class</h4>
-        <p>Choose your class (S4, S5, S6 or L3, L4, L5) and access all available notes.</p>
+        <div class="step-icon">\u2b07</div>
+        <h4>Download & Learn</h4>
+        <p>View or download PDF and DOC notes instantly, for free</p>
       </div>
-      <div class="step-card">
-        <div class="step-num">4</div>
-        <h4>Read or Download</h4>
-        <p>Read notes directly in the browser or download for offline use — completely free.</p>
+    </div>
+  </div>
+</section>
+
+<!-- Subjects -->
+<section class="subjects-section" id="subjects">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-badge">Subjects</div>
+      <h2>Browse by <em>Subject</em></h2>
+      <p>Select a subject \u2014 then choose your education level inside</p>
+    </div>
+    <% if (sectors.length === 0) { %>
+      <div class="empty-state">
+        <div class="empty-icon">\ud83d\udcda</div>
+        <h3>No subjects yet</h3>
+        <p>Check back soon for educational content.</p>
       </div>
+    <% } else { %>
+      <div class="sectors-grid">
+        <% sectors.forEach(sector => { %>
+          <a href="/notes/<%= sector.slug %>" class="sector-card" style="--sector-color: <%= sector.color %>">
+            <div class="sector-card-top">
+              <div class="sector-icon-wrap"><span class="sector-symbol"><%= sector.name.charAt(0) %></span></div>
+              <span class="sector-count"><%= sector.note_count || 0 %> notes</span>
+            </div>
+            <h3 class="sector-name"><%= sector.name %></h3>
+            <p class="sector-desc"><%= sector.description || 'Explore notes in this subject.' %></p>
+            <div class="sector-cta">
+              Choose Level <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+            </div>
+          </a>
+        <% }) %>
+      </div>
+      <div class="section-cta">
+        <a href="/notes" class="btn btn-outline-dark">View All Subjects \u2192</a>
+      </div>
+    <% } %>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <div class="container">
+    <div class="cta-box">
+      <div class="cta-content">
+        <h2>Ready to start learning?</h2>
+        <p>Pick your subject, choose your level, download for free.</p>
+        <a href="/notes" class="btn btn-white">Browse Subjects \u2192</a>
+      </div>
+      <div class="cta-decoration"><div class="cta-orb"></div></div>
     </div>
   </div>
 </section>

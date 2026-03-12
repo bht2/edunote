@@ -2,65 +2,59 @@ const db = require('../config/database');
 
 class Class {
   static async findByCombination(combinationId) {
-    const [rows] = await db.execute(
-      'SELECT * FROM classes WHERE combination_id = ? ORDER BY order_index ASC, name ASC',
-      [combinationId]
-    );
+    const [rows] = await db.execute(`
+      SELECT cl.*, COUNT(n.id) as note_count
+      FROM classes cl
+      LEFT JOIN notes n ON cl.id = n.class_id
+      WHERE cl.combination_id = ?
+      GROUP BY cl.id
+      ORDER BY cl.order_index ASC, cl.name ASC
+    `, [combinationId]);
     return rows;
   }
+
   static async findById(id) {
-    const [rows] = await db.execute(
-      `SELECT cl.*, co.name as combo_name, co.slug as combo_slug, co.color as combo_color,
-              l.name as level_name, l.slug as level_slug
-       FROM classes cl
-       JOIN combinations co ON cl.combination_id = co.id
-       JOIN levels l ON co.level_id = l.id
-       WHERE cl.id = ?`,
-      [id]
-    );
+    const [rows] = await db.execute(`
+      SELECT cl.*, c.name as combo_name, c.slug as combo_slug, c.color as combo_color,
+             e.name as level_name, e.slug as level_slug
+      FROM classes cl
+      JOIN combinations c ON cl.combination_id = c.id
+      JOIN education_levels e ON c.education_level_id = e.id
+      WHERE cl.id=?
+    `, [id]);
     return rows[0] || null;
-  }
-  static async findBySlug(combinationId, slug) {
-    const [rows] = await db.execute(
-      `SELECT cl.*, co.name as combo_name, co.slug as combo_slug, co.color as combo_color,
-              l.name as level_name, l.slug as level_slug
-       FROM classes cl
-       JOIN combinations co ON cl.combination_id = co.id
-       JOIN levels l ON co.level_id = l.id
-       WHERE cl.combination_id = ? AND cl.slug = ?`,
-      [combinationId, slug]
-    );
-    return rows[0] || null;
-  }
-  static async create(data) {
-    const [result] = await db.execute(
-      'INSERT INTO classes (combination_id, name, slug, order_index) VALUES (?,?,?,?)',
-      [data.combination_id, data.name, data.slug, data.order_index || 0]
-    );
-    return result;
-  }
-  static async update(id, data) {
-    const [result] = await db.execute(
-      'UPDATE classes SET name=?, slug=?, order_index=? WHERE id=?',
-      [data.name, data.slug, data.order_index || 0, id]
-    );
-    return result;
-  }
-  static async delete(id) {
-    const [result] = await db.execute('DELETE FROM classes WHERE id = ?', [id]);
-    return result;
-  }
-  static async countAll() {
-    const [rows] = await db.execute('SELECT COUNT(*) as count FROM classes');
-    return rows[0].count;
   }
 
-  static async countByLevel(levelId) {
-    const [rows] = await db.execute(
-      `SELECT COUNT(*) as count FROM classes cl
-       JOIN combinations co ON cl.combination_id = co.id
-       WHERE co.level_id = ?`, [levelId]);
-    return rows[0].count;
+  static async findBySlug(slug) {
+    const [rows] = await db.execute(`
+      SELECT cl.*, c.name as combo_name, c.slug as combo_slug, c.color as combo_color,
+             c.full_name as combo_full_name,
+             e.name as level_name, e.slug as level_slug, e.color as level_color
+      FROM classes cl
+      JOIN combinations c ON cl.combination_id = c.id
+      JOIN education_levels e ON c.education_level_id = e.id
+      WHERE cl.slug=?
+    `, [slug]);
+    return rows[0] || null;
+  }
+
+  static async create({ combinationId, name, slug, orderIndex }) {
+    const [result] = await db.execute(
+      'INSERT INTO classes (combination_id,name,slug,order_index) VALUES (?,?,?,?)',
+      [combinationId, name, slug, orderIndex || 0]
+    );
+    return result.insertId;
+  }
+
+  static async update(id, { name, slug, orderIndex }) {
+    await db.execute(
+      'UPDATE classes SET name=?,slug=?,order_index=? WHERE id=?',
+      [name, slug, orderIndex || 0, id]
+    );
+  }
+
+  static async delete(id) {
+    await db.execute('DELETE FROM classes WHERE id=?', [id]);
   }
 }
 

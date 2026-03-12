@@ -1,66 +1,35 @@
-const Admin = require('../models/Admin');
-const Level = require('../models/Level');
-const Combination = require('../models/Combination');
-const Class = require('../models/Class');
-const Note = require('../models/Note');
-const bcrypt = require('bcryptjs');
-const path = require('path');
-const fs = require('fs');
+const EducationLevel = require('../models/EducationLevel');
+const Combination    = require('../models/Combination');
+const Class          = require('../models/Class');
+const Note           = require('../models/Note');
+const Admin          = require('../models/Admin');
+const { avatarUpload, uploadAvatarToCloudinary, deleteFromCloudinary } = require('../middleware/upload');
+const cloudinary     = require('cloudinary').v2;
 
-module.exports = {
-  dashboard: async (req, res) => {
+const dashboardController = {
+  index: async (req, res) => {
     try {
-      const isSuper = req.session.adminRole === 'super';
-
-      // Sub-admins should not see dashboard — redirect to their level
-      if (!isSuper && req.session.adminLevelId) {
-        return res.redirect(`/admin/levels/${req.session.adminLevelId}/combinations`);
-      }
-      let levelCount, comboCount, classCount, noteCount, recentNotes, assignedLevel = null;
-
-      if (isSuper) {
-        [levelCount, comboCount, classCount, noteCount, recentNotes, subAdmins] = await Promise.all([
-          Level.countAll(), Combination.countAll(), Class.countAll(), Note.countAll(), Note.findAll(5),
-        Admin.findAll()
-        ]);
-      } else {
-        // Sub-admin: only show stats for their level
-        const levelId = req.session.adminLevelId;
-        assignedLevel = await Level.findById(levelId);
-        [comboCount, classCount, noteCount, recentNotes] = await Promise.all([
-          Combination.countByLevel(levelId),
-          Class.countByLevel(levelId),
-          Note.countByLevel(levelId),
-          Note.findByLevel(levelId, 5)
-        ]);
-        levelCount = 1;
-      }
-
+      const levels       = await EducationLevel.findAll();
+      const combinations = await Combination.findAll();
+      const noteCount    = await Note.countAll();
+      const downloads    = await Note.countDownloads();
       res.render('admin/dashboard', {
+        title: 'Dashboard - EduNote Admin',
         layout: 'layouts/admin',
-        title: 'Dashboard — EduNote Admin',
-        levelCount, comboCount, classCount, noteCount, recentNotes,
-        isSuper, assignedLevel, subAdmins: (subAdmins||[]).filter(a=>a.role==='sub')
+        levels, combinations, noteCount, downloads
       });
     } catch (err) {
       console.error(err);
-      req.flash('error', 'Error loading dashboard');
-      res.redirect('/admin/login');
+      res.render('admin/dashboard', { title: 'Dashboard', layout: 'layouts/admin', levels: [], combinations: [], noteCount: 0, downloads: 0 });
     }
   },
 
-  showSettings: async (req, res) => {
+  getSettings: async (req, res) => {
     try {
       const admin = await Admin.findById(req.session.adminId);
-      res.render('admin/settings', {
-        layout: 'layouts/admin',
-        title: 'Settings — EduNote Admin',
-        admin,
-        isSuper: req.session.adminRole === 'super'
-      });
+      res.render('admin/settings', { title: 'Settings - EduNote', layout: 'layouts/admin', admin });
     } catch (err) {
-      console.error('Settings error:', err);
-      req.flash('error', 'Error loading settings');
+      req.flash('error', 'Could not load settings.');
       res.redirect('/admin/dashboard');
     }
   },
@@ -69,12 +38,12 @@ module.exports = {
     try {
       const { name, email } = req.body;
       await Admin.updateProfile(req.session.adminId, { name, email });
-      req.session.adminName = name;
+      req.session.adminName  = name;
       req.session.adminEmail = email;
       req.flash('success', 'Profile updated successfully.');
       res.redirect('/admin/settings');
     } catch (err) {
-      req.flash('error', 'Error updating profile.');
+      req.flash('error', 'Failed to update profile.');
       res.redirect('/admin/settings');
     }
   },
@@ -92,48 +61,54 @@ module.exports = {
         req.flash('error', 'Current password is incorrect.');
         return res.redirect('/admin/settings');
       }
-      const hashed = await bcrypt.hash(new_password, 12);
-      await Admin.updatePassword(req.session.adminId, hashed);
+      await Admin.updatePassword(req.session.adminId, new_password);
       req.flash('success', 'Password updated successfully.');
       res.redirect('/admin/settings');
     } catch (err) {
-      req.flash('error', 'Error updating password.');
+      req.flash('error', 'Failed to update password.');
       res.redirect('/admin/settings');
     }
   },
 
-  uploadAvatar: async (req, res) => {
-    try {
-      if (!req.file) { req.flash('error', 'No file uploaded.'); return res.redirect('/admin/settings'); }
-      const admin = await Admin.findById(req.session.adminId);
-      if (admin.avatar) {
-        const oldPath = path.join(__dirname, '../public/avatars', admin.avatar);
-        if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+  uploadAvatar: [
+    avatarUpload.single('avatar'),
+    async (req, res) => {
+      try {
+        if (!req.file) {
+          req.flash('error', 'Please select an image file.');
+          return res.redirect('/admin/settings');
+        }
+        // Delete old avatar from cloudinary
+        const admin = await Admin.findById(req.session.adminId);
+        if (admin.avatar && admin.avatar.includes('cloudinary')) {
+          const parts = admin.avatar.split('/');
+          const publicId = 'edunote/avatars/' + parts[parts.length - 1].split('.')[0];
+          await deleteFromCloudinary(publicId, 'image');
+        }
+        const result = await uploadAvatarToCloudinary(req.file.buffer);
+        await Admin.updateAvatar(req.session.adminId, result.secure_url);
+        req.session.adminAvatar = result.secure_url;
+        req.flash('success', 'Avatar updated successfully.');
+        res.redirect('/admin/settings');
+      } catch (err) {
+        console.error(err);
+        req.flash('error', 'Failed to upload avatar.');
+        res.redirect('/admin/settings');
       }
-      await Admin.updateAvatar(req.session.adminId, req.file.filename);
-      req.session.adminAvatar = req.file.filename;
-      req.flash('success', 'Profile photo updated.');
-      res.redirect('/admin/settings');
-    } catch (err) {
-      req.flash('error', 'Error uploading photo.');
-      res.redirect('/admin/settings');
     }
-  },
+  ],
 
   removeAvatar: async (req, res) => {
     try {
-      const admin = await Admin.findById(req.session.adminId);
-      if (admin.avatar) {
-        const oldPath = path.join(__dirname, '../public/avatars', admin.avatar);
-        if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
-      }
-      await Admin.removeAvatar(req.session.adminId);
+      await Admin.updateAvatar(req.session.adminId, null);
       req.session.adminAvatar = null;
-      req.flash('success', 'Profile photo removed.');
+      req.flash('success', 'Avatar removed.');
       res.redirect('/admin/settings');
     } catch (err) {
-      req.flash('error', 'Error removing photo.');
+      req.flash('error', 'Failed to remove avatar.');
       res.redirect('/admin/settings');
     }
   }
 };
+
+module.exports = dashboardController;

@@ -1,70 +1,89 @@
 const multer = require('multer');
+const cloudinary = require('cloudinary').v2;
+const streamifier = require('streamifier');
 const path = require('path');
+const fs = require('fs');
 
-// Check if Cloudinary is configured
-const useCloudinary = process.env.CLOUDINARY_CLOUD_NAME &&
-                      process.env.CLOUDINARY_API_KEY &&
-                      process.env.CLOUDINARY_API_SECRET;
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key:    process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
-let storage;
-
-if (useCloudinary) {
-  const cloudinary = require('cloudinary').v2;
-  const { CloudinaryStorage } = require('multer-storage-cloudinary');
-
-  cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET
-  });
-
-  storage = new CloudinaryStorage({
-    cloudinary,
-    params: {
-      folder: 'edunote-notes',
-      resource_type: 'raw',
-      allowed_formats: ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'txt'],
-      use_filename: true,
-      unique_filename: true
-    }
-  });
-} else {
-  const fs = require('fs');
-  const uploadDir = path.join(__dirname, '../uploads');
-  if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-
-  storage = multer.diskStorage({
-    destination: (req, file, cb) => cb(null, uploadDir),
-    filename: (req, file, cb) => {
-      const unique = Date.now() + '-' + Math.round(Math.random() * 1e9);
-      cb(null, unique + path.extname(file.originalname));
-    }
-  });
-}
+// Multer memory storage for Cloudinary uploads
+const storage = multer.memoryStorage();
 
 const fileFilter = (req, file, cb) => {
-  const allowed = [
-    'application/pdf',
-    'application/msword',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    'application/vnd.ms-powerpoint',
-    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-    'text/plain'
-  ];
-  const allowedExts = ['.pdf', '.doc', '.docx', '.ppt', '.pptx', '.txt'];
+  const allowed = ['.pdf', '.doc', '.docx', '.ppt', '.pptx', '.txt', '.jpg', '.jpeg', '.png'];
   const ext = path.extname(file.originalname).toLowerCase();
-
-  if (allowed.includes(file.mimetype) || allowedExts.includes(ext)) {
+  if (allowed.includes(ext)) {
     cb(null, true);
   } else {
-    cb(new Error('Only PDF, DOC, DOCX, PPT, PPTX and TXT files are allowed'));
+    cb(new Error('File type not allowed. Allowed: PDF, DOC, DOCX, PPT, PPTX, TXT, images'), false);
   }
 };
 
 const upload = multer({
   storage,
   fileFilter,
-  limits: { fileSize: 50 * 1024 * 1024 }
+  limits: { fileSize: 50 * 1024 * 1024 } // 50MB
 });
 
-module.exports = upload;
+// Upload to Cloudinary
+const uploadToCloudinary = (buffer, originalname) => {
+  return new Promise((resolve, reject) => {
+    const ext = path.extname(originalname).toLowerCase();
+    const resourceType = ['.jpg','.jpeg','.png','.gif','.webp'].includes(ext) ? 'image' : 'raw';
+    
+    const stream = cloudinary.uploader.upload_stream(
+      {
+        folder: 'edunote/notes',
+        resource_type: resourceType,
+        use_filename: true,
+        unique_filename: true,
+      },
+      (error, result) => {
+        if (error) reject(error);
+        else resolve(result);
+      }
+    );
+    streamifier.createReadStream(buffer).pipe(stream);
+  });
+};
+
+// Delete from Cloudinary
+const deleteFromCloudinary = async (publicId, resourceType = 'raw') => {
+  try {
+    await cloudinary.uploader.destroy(publicId, { resource_type: resourceType });
+  } catch (err) {
+    console.error('Cloudinary delete error:', err.message);
+  }
+};
+
+// Avatar upload (image only)
+const avatarStorage = multer.memoryStorage();
+const avatarUpload = multer({
+  storage: avatarStorage,
+  fileFilter: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (['.jpg','.jpeg','.png','.webp'].includes(ext)) cb(null, true);
+    else cb(new Error('Only image files allowed for avatar'), false);
+  },
+  limits: { fileSize: 5 * 1024 * 1024 }
+});
+
+const uploadAvatarToCloudinary = (buffer) => {
+  return new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      { folder: 'edunote/avatars', resource_type: 'image' },
+      (error, result) => {
+        if (error) reject(error);
+        else resolve(result);
+      }
+    );
+    streamifier.createReadStream(buffer).pipe(stream);
+  });
+};
+
+module.exports = { upload, uploadToCloudinary, deleteFromCloudinary, avatarUpload, uploadAvatarToCloudinary };

@@ -1,66 +1,84 @@
-const Class = require('../models/Class');
-const Combination = require('../models/Combination');
-const Level = require('../models/Level');
+const Class          = require('../models/Class');
+const Combination    = require('../models/Combination');
+const EducationLevel = require('../models/EducationLevel');
 
-const backToLevels = (req) => {
-  if (req.session.adminRole === 'sub' && req.session.adminLevelId) {
-    return `/admin/levels/${req.session.adminLevelId}/combinations`;
-  }
-  return '/admin/levels';
-};
-
-module.exports = {
+const classController = {
   index: async (req, res) => {
-    const level = await Level.findById(req.params.levelId);
-    const combo = await Combination.findById(req.params.comboId);
-    if (!combo) { req.flash('error', 'Not found.'); return res.redirect(backToLevels(req)); }
-    const classes = await Class.findByCombination(combo.id);
-    res.render('admin/classes/index', { layout: 'layouts/admin', title: `${combo.name} — Classes`, level, combo, classes });
+    try {
+      const combo   = await Combination.findById(req.params.comboId);
+      if (!combo) { req.flash('error', 'Combination not found.'); return res.redirect('/admin/levels'); }
+      const level   = await EducationLevel.findById(combo.education_level_id);
+      const classes = await Class.findByCombination(combo.id);
+      res.render('admin/classes/index', { title: `${combo.name} — Classes`, layout: 'layouts/admin', combo, level, classes });
+    } catch (err) {
+      req.flash('error', 'Failed to load classes.');
+      res.redirect('/admin/levels');
+    }
   },
+
   create: async (req, res) => {
-    const level = await Level.findById(req.params.levelId);
-    const combo = await Combination.findById(req.params.comboId);
-    res.render('admin/classes/create', { layout: 'layouts/admin', title: 'Add Class', level, combo });
+    try {
+      const combo = await Combination.findById(req.params.comboId);
+      const level = await EducationLevel.findById(combo.education_level_id);
+      res.render('admin/classes/create', { title: 'Add Class', layout: 'layouts/admin', combo, level });
+    } catch (err) {
+      req.flash('error', 'Failed to load form.');
+      res.redirect('/admin/levels');
+    }
   },
+
   store: async (req, res) => {
     try {
+      const combo = await Combination.findById(req.params.comboId);
       const { name, order_index } = req.body;
-      const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-      await Class.create({ combination_id: req.params.comboId, name, slug, order_index });
-      req.flash('success', 'Class created.');
-      res.redirect(`/admin/levels/${req.params.levelId}/combinations/${req.params.comboId}/classes`);
+      const slug = `${combo.slug}-${name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+      await Class.create({ combinationId: combo.id, name, slug, orderIndex: order_index || 0 });
+      req.flash('success', `Class "${name}" created.`);
+      res.redirect(`/admin/combinations/${combo.id}/classes`);
     } catch (err) {
-      req.flash('error', 'Error: ' + err.message);
-      res.redirect(`/admin/levels/${req.params.levelId}/combinations/${req.params.comboId}/classes/create`);
+      req.flash('error', 'Failed to create class. May already exist.');
+      res.redirect(`/admin/combinations/${req.params.comboId}/classes/create`);
     }
   },
+
   edit: async (req, res) => {
-    const level = await Level.findById(req.params.levelId);
-    const combo = await Combination.findById(req.params.comboId);
-    const cls = await Class.findById(req.params.id);
-    if (!cls) { req.flash('error', 'Not found.'); return res.redirect(backToLevels(req)); }
-    res.render('admin/classes/edit', { layout: 'layouts/admin', title: 'Edit Class', level, combo, cls });
+    try {
+      const combo = await Combination.findById(req.params.comboId);
+      const level = await EducationLevel.findById(combo.education_level_id);
+      const cls   = await Class.findById(req.params.id);
+      if (!cls) { req.flash('error', 'Class not found.'); return res.redirect(`/admin/combinations/${req.params.comboId}/classes`); }
+      res.render('admin/classes/edit', { title: 'Edit Class', layout: 'layouts/admin', combo, level, cls });
+    } catch (err) {
+      req.flash('error', 'Failed to load class.');
+      res.redirect(`/admin/combinations/${req.params.comboId}/classes`);
+    }
   },
+
   update: async (req, res) => {
     try {
+      const combo = await Combination.findById(req.params.comboId);
       const { name, order_index } = req.body;
-      const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-      await Class.update(req.params.id, { name, slug, order_index });
-      req.flash('success', 'Updated.');
-      res.redirect(`/admin/levels/${req.params.levelId}/combinations/${req.params.comboId}/classes`);
+      const slug = `${combo.slug}-${name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+      await Class.update(req.params.id, { name, slug, orderIndex: order_index || 0 });
+      req.flash('success', 'Class updated.');
+      res.redirect(`/admin/combinations/${combo.id}/classes`);
     } catch (err) {
-      req.flash('error', 'Error updating.');
-      res.redirect(`/admin/levels/${req.params.levelId}/combinations/${req.params.comboId}/classes`);
+      req.flash('error', 'Failed to update class.');
+      res.redirect(`/admin/combinations/${req.params.comboId}/classes`);
     }
   },
+
   destroy: async (req, res) => {
     try {
+      const combo = await Combination.findById(req.params.comboId);
       await Class.delete(req.params.id);
-      req.flash('success', 'Deleted.');
-      res.redirect(`/admin/levels/${req.params.levelId}/combinations/${req.params.comboId}/classes`);
+      req.flash('success', 'Class deleted.');
+      res.redirect(`/admin/combinations/${combo.id}/classes`);
     } catch (err) {
-      req.flash('error', 'Error deleting.');
-      res.redirect(`/admin/levels/${req.params.levelId}/combinations/${req.params.comboId}/classes`);
+      req.flash('error', 'Failed to delete class.');
+      res.redirect(`/admin/combinations/${req.params.comboId}/classes`);
     }
   }
 };
+
+module.exports = classController;

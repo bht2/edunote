@@ -1,34 +1,33 @@
-<div class="admin-page-header">
-  <div>
+<div class="admin-page">
+  <div class="admin-page-header">
     <h1>Edit Level</h1>
-    <div class="admin-breadcrumb"><a href="/admin/levels">Levels</a> › Edit</div>
+    <a href="/admin/levels" class="btn btn-secondary">← Back</a>
   </div>
-</div>
-<div class="card" style="max-width:700px">
-  <div class="card-body">
+  <div class="form-card">
     <form action="/admin/levels/<%= level.id %>" method="POST">
-      <div class="form-grid">
-        <div class="form-group full">
-          <label>Level Name <span class="req">*</span></label>
-          <input type="text" name="name" value="<%= level.name %>" required>
-        </div>
-        <div class="form-group full">
-          <label>Description</label>
-          <textarea name="description"><%= level.description %></textarea>
-        </div>
+      <div class="form-group">
+        <label>Level Name *</label>
+        <input type="text" name="name" value="<%= level.name %>" required>
+      </div>
+      <div class="form-group">
+        <label>Description</label>
+        <input type="text" name="description" value="<%= level.description %>">
+      </div>
+      <div class="form-row">
         <div class="form-group">
           <label>Color</label>
           <input type="color" name="color" value="<%= level.color %>">
         </div>
         <div class="form-group">
-          <label>Display Order</label>
-          <input type="number" name="order_index" value="<%= level.order_index %>">
+          <label>Icon (emoji)</label>
+          <input type="text" name="icon" value="<%= level.icon %>" maxlength="5">
+        </div>
+        <div class="form-group">
+          <label>Order</label>
+          <input type="number" name="order_index" value="<%= level.order_index %>" min="0">
         </div>
       </div>
-      <div style="display:flex;gap:1rem;margin-top:1.5rem">
-        <button type="submit" class="btn btn-primary btn-lg">Save Changes</button>
-        <a href="/admin/levels" class="btn btn-secondary btn-lg">Cancel</a>
-      </div>
+      <button type="submit" class="btn btn-primary">Update Level</button>
     </form>
   </div>
 </div>

@@ -1,99 +1,92 @@
 const db = require('../config/database');
 
 class Note {
-  static async findByClass(classId) {
-    const [rows] = await db.execute(
-      `SELECT n.*, cl.name as class_name, cl.slug as class_slug,
-              co.name as combo_name, co.slug as combo_slug, co.color as combo_color,
-              l.name as level_name, l.slug as level_slug
-       FROM notes n
-       JOIN classes cl ON n.class_id = cl.id
-       JOIN combinations co ON cl.combination_id = co.id
-       JOIN levels l ON co.level_id = l.id
-       WHERE n.class_id = ?
-       ORDER BY n.created_at DESC`,
-      [classId]
-    );
-    return rows;
-  }
-  static async findById(id) {
-    const [rows] = await db.execute(
-      `SELECT n.*, cl.name as class_name, cl.slug as class_slug,
-              co.name as combo_name, co.slug as combo_slug, co.color as combo_color,
-              l.name as level_name, l.slug as level_slug
-       FROM notes n
-       JOIN classes cl ON n.class_id = cl.id
-       JOIN combinations co ON cl.combination_id = co.id
-       JOIN levels l ON co.level_id = l.id
-       WHERE n.id = ?`,
-      [id]
-    );
-    return rows[0] || null;
-  }
-  static async create(data) {
-    const [result] = await db.execute(
-      'INSERT INTO notes (class_id, title, description, file_name, file_original_name, file_size, file_type, file_url) VALUES (?,?,?,?,?,?,?,?)',
-      [data.class_id, data.title, data.description || '', data.file_name, data.file_original_name, data.file_size || 0, data.file_type || '', data.file_url || '']
-    );
-    return result;
-  }
-  static async update(id, data) {
-    const [result] = await db.execute(
-      'UPDATE notes SET class_id=?, title=?, description=? WHERE id=?',
-      [data.class_id, data.title, data.description || '', id]
-    );
-    return result;
-  }
-  static async updateFile(id, data) {
-    const [result] = await db.execute(
-      'UPDATE notes SET file_name=?, file_original_name=?, file_size=?, file_type=?, file_url=? WHERE id=?',
-      [data.file_name, data.file_original_name, data.file_size || 0, data.file_type || '', data.file_url || '', id]
-    );
-    return result;
-  }
-  static async delete(id) {
-    const [result] = await db.execute('DELETE FROM notes WHERE id = ?', [id]);
-    return result;
-  }
-  static async incrementDownload(id) {
-    await db.execute('UPDATE notes SET download_count = download_count + 1 WHERE id = ?', [id]);
-  }
-  static async countAll() {
-    const [rows] = await db.execute('SELECT COUNT(*) as count FROM notes');
-    return rows[0].count;
-  }
-  static async findAll(limit = 50) {
-    const safeLimit = parseInt(limit) || 50;
-    const [rows] = await db.execute(
-      `SELECT n.*, cl.name as class_name, co.name as combo_name, l.name as level_name
-       FROM notes n
-       JOIN classes cl ON n.class_id = cl.id
-       JOIN combinations co ON cl.combination_id = co.id
-       JOIN levels l ON co.level_id = l.id
-       ORDER BY n.created_at DESC LIMIT ${safeLimit}`
-    );
+  static async findAll() {
+    const [rows] = await db.execute(`
+      SELECT n.*, cl.name as class_name, c.name as combo_name, e.name as level_name
+      FROM notes n
+      JOIN classes cl ON n.class_id = cl.id
+      JOIN combinations c ON cl.combination_id = c.id
+      JOIN education_levels e ON c.education_level_id = e.id
+      ORDER BY n.created_at DESC
+    `);
     return rows;
   }
 
-  static async countByLevel(levelId) {
-    const [rows] = await db.execute(
-      `SELECT COUNT(*) as count FROM notes n
-       JOIN classes cl ON n.class_id = cl.id
-       JOIN combinations co ON cl.combination_id = co.id
-       WHERE co.level_id = ?`, [levelId]);
-    return rows[0].count;
-  }
-  static async findByLevel(levelId, limit = 5) {
-    const safe = parseInt(limit) || 5;
-    const [rows] = await db.execute(
-      `SELECT n.*, cl.name as class_name, co.name as combo_name, l.name as level_name
-       FROM notes n
-       JOIN classes cl ON n.class_id = cl.id
-       JOIN combinations co ON cl.combination_id = co.id
-       JOIN levels l ON co.level_id = l.id
-       WHERE co.level_id = ?
-       ORDER BY n.created_at DESC LIMIT ${safe}`, [levelId]);
+  static async findByClass(classId) {
+    const [rows] = await db.execute(`
+      SELECT n.*, cl.name as class_name, c.name as combo_name, c.color as combo_color,
+             e.name as level_name
+      FROM notes n
+      JOIN classes cl ON n.class_id = cl.id
+      JOIN combinations c ON cl.combination_id = c.id
+      JOIN education_levels e ON c.education_level_id = e.id
+      WHERE n.class_id = ?
+      ORDER BY n.subject ASC, n.created_at DESC
+    `, [classId]);
     return rows;
+  }
+
+  static async findById(id) {
+    const [rows] = await db.execute(`
+      SELECT n.*, cl.name as class_name, cl.slug as class_slug,
+             c.name as combo_name, c.slug as combo_slug, c.color as combo_color,
+             e.name as level_name, e.slug as level_slug
+      FROM notes n
+      JOIN classes cl ON n.class_id = cl.id
+      JOIN combinations c ON cl.combination_id = c.id
+      JOIN education_levels e ON c.education_level_id = e.id
+      WHERE n.id = ?
+    `, [id]);
+    return rows[0] || null;
+  }
+
+  static async create({ classId, title, description, subject, fileName, fileOriginalName, fileUrl, fileSize, fileType, cloudinaryPublicId }) {
+    const [result] = await db.execute(
+      'INSERT INTO notes (class_id,title,description,subject,file_name,file_original_name,file_url,file_size,file_type,cloudinary_public_id) VALUES (?,?,?,?,?,?,?,?,?,?)',
+      [classId, title, description || '', subject || '', fileName, fileOriginalName, fileUrl || '', fileSize || 0, fileType || '', cloudinaryPublicId || '']
+    );
+    return result.insertId;
+  }
+
+  static async update(id, { title, description, subject, fileName, fileOriginalName, fileUrl, fileSize, fileType, cloudinaryPublicId }) {
+    if (fileName) {
+      await db.execute(
+        'UPDATE notes SET title=?,description=?,subject=?,file_name=?,file_original_name=?,file_url=?,file_size=?,file_type=?,cloudinary_public_id=? WHERE id=?',
+        [title, description || '', subject || '', fileName, fileOriginalName, fileUrl || '', fileSize || 0, fileType || '', cloudinaryPublicId || '', id]
+      );
+    } else {
+      await db.execute(
+        'UPDATE notes SET title=?,description=?,subject=? WHERE id=?',
+        [title, description || '', subject || '', id]
+      );
+    }
+  }
+
+  static async delete(id) {
+    await db.execute('DELETE FROM notes WHERE id=?', [id]);
+  }
+
+  static async incrementDownload(id) {
+    await db.execute('UPDATE notes SET download_count = download_count + 1 WHERE id=?', [id]);
+  }
+
+  static async countAll() {
+    const [[row]] = await db.execute('SELECT COUNT(*) as total FROM notes');
+    return row.total;
+  }
+
+  static async countDownloads() {
+    const [[row]] = await db.execute('SELECT SUM(download_count) as total FROM notes');
+    return row.total || 0;
+  }
+
+  static formatFileSize(bytes) {
+    if (!bytes || bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   }
 }
 

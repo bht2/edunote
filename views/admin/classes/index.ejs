@@ -1,49 +1,36 @@
-<div class="admin-page-header">
-  <div>
-    <h1><%= combo.name %> — Classes</h1>
-    <div class="admin-breadcrumb">
-      <a href="<%= typeof session !== 'undefined' && session.adminRole === 'sub' ? '/admin/levels/' + session.adminLevelId + '/combinations' : '/admin/levels' %>">Levels</a> ›
-      <a href="/admin/levels/<%= level.id %>/combinations"><%= level.name %></a> ›
-      <span><%= combo.name %></span>
+<div class="admin-page">
+  <div class="admin-page-header">
+    <div>
+      <div class="breadcrumb-admin">
+        <a href="/admin/levels">Levels</a> › <a href="/admin/levels/<%= level.id %>/combinations"><%= level.name %></a> › <%= combo.name %>
+      </div>
+      <h1><span class="combo-badge" style="background:<%= combo.color %>"><%= combo.name %></span> — Classes</h1>
     </div>
+    <a href="/admin/combinations/<%= combo.id %>/classes/create" class="btn btn-primary">+ Add Class</a>
   </div>
-  <a href="/admin/levels/<%= level.id %>/combinations/<%= combo.id %>/classes/create" class="btn btn-primary">+ Add Class</a>
-</div>
 
-<% if (classes.length === 0) { %>
-  <div class="card">
-    <div class="card-body" style="text-align:center;padding:4rem">
-      <div style="font-size:3rem;margin-bottom:1rem">🏫</div>
-      <h3 style="color:var(--ink);margin-bottom:.5rem">No classes yet</h3>
-      <p style="color:var(--muted);margin-bottom:1.5rem">Add classes like S4, S5, S6 or L3, L4, L5</p>
-      <a href="/admin/levels/<%= level.id %>/combinations/<%= combo.id %>/classes/create" class="btn btn-primary">+ Add First Class</a>
-    </div>
-  </div>
-<% } else { %>
-  <div class="card">
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr><th>Class</th><th>Order</th><th>Actions</th></tr>
-        </thead>
+  <div class="admin-table-card">
+    <% if (classes.length === 0) { %>
+      <div class="empty-state"><p>No classes yet.</p></div>
+    <% } else { %>
+      <table class="admin-table">
+        <thead><tr><th>Class</th><th>Notes</th><th>Actions</th></tr></thead>
         <tbody>
           <% classes.forEach(cls => { %>
-            <tr>
-              <td><strong><%= cls.name %></strong></td>
-              <td><%= cls.order_index %></td>
-              <td>
-                <div style="display:flex;gap:.5rem">
-                  <a href="/admin/levels/<%= level.id %>/combinations/<%= combo.id %>/classes/<%= cls.id %>/notes" class="btn btn-success btn-sm">📄 Notes</a>
-                  <a href="/admin/levels/<%= level.id %>/combinations/<%= combo.id %>/classes/<%= cls.id %>/edit" class="btn btn-secondary btn-sm">Edit</a>
-                  <form action="/admin/levels/<%= level.id %>/combinations/<%= combo.id %>/classes/<%= cls.id %>/delete" method="POST" onsubmit="return confirm('Delete this class?')">
-                    <button type="submit" class="btn btn-danger btn-sm">Delete</button>
-                  </form>
-                </div>
-              </td>
-            </tr>
+          <tr>
+            <td><strong><%= cls.name %></strong></td>
+            <td><%= cls.note_count %></td>
+            <td class="table-actions">
+              <a href="/admin/classes/<%= cls.id %>/notes" class="btn btn-sm btn-primary">Notes (<%= cls.note_count %>) →</a>
+              <a href="/admin/combinations/<%= combo.id %>/classes/<%= cls.id %>/edit" class="btn btn-sm btn-secondary">Edit</a>
+              <form action="/admin/combinations/<%= combo.id %>/classes/<%= cls.id %>/delete" method="POST" style="display:inline" onsubmit="return confirm('Delete this class and all its notes?')">
+                <button class="btn btn-sm btn-danger">Delete</button>
+              </form>
+            </td>
+          </tr>
           <% }) %>
         </tbody>
       </table>
-    </div>
+    <% } %>
   </div>
-<% } %>
+</div>

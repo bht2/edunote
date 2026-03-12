@@ -1,23 +1,21 @@
 require('dotenv').config();
-const express = require('express');
-const expressLayouts = require('express-ejs-layouts');
-const session = require('express-session');
-const flash = require('connect-flash');
-const path = require('path');
+const express        = require('express');
+const session        = require('express-session');
+const flash          = require('connect-flash');
+const ejsLayouts     = require('express-ejs-layouts');
+const path           = require('path');
 
 const app = express();
+const PORT = process.env.PORT || 3000;
 
 // View engine
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
-app.use(expressLayouts);
+app.use(ejsLayouts);
 app.set('layout', 'layouts/public');
-app.set('layout extractScripts', true);
-app.set('layout extractStyles', true);
 
 // Static files
 app.use(express.static(path.join(__dirname, 'public')));
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Body parser
 app.use(express.urlencoded({ extended: true }));
@@ -25,7 +23,7 @@ app.use(express.json());
 
 // Session
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'edunote-secret-key',
+  secret: process.env.SESSION_SECRET || 'edunote-secret-2024',
   resave: true,
   saveUninitialized: false,
   cookie: {
@@ -35,33 +33,18 @@ app.use(session({
   }
 }));
 
-// Flash messages
+// Flash
 app.use(flash());
 
-// Global variables
+// Global locals
 app.use((req, res, next) => {
-  res.locals.success = req.flash('success');
-  res.locals.error = req.flash('error');
-  res.locals.admin = req.session.adminId ? {
-    id: req.session.adminId,
-    name: req.session.adminName,
-    email: req.session.adminEmail,
-    avatar: req.session.adminAvatar
-  } : null;
-  res.locals.session = req.session;
-  // Show pending request count in sidebar for super admins
-  if (req.session.adminRole === 'super') {
-    try {
-      const ComboRequest = require('./models/ComboRequest');
-      ComboRequest.countPending().then(count => {
-        res.locals.pendingRequestCount = count;
-        next();
-      }).catch(() => { res.locals.pendingRequestCount = 0; next(); });
-    } catch(e) { res.locals.pendingRequestCount = 0; next(); }
-  } else {
-    res.locals.pendingRequestCount = 0;
-    next();
-  }
+  res.locals.success_msg   = req.flash('success');
+  res.locals.error_msg     = req.flash('error');
+  res.locals.adminId       = req.session.adminId || null;
+  res.locals.adminName     = req.session.adminName || null;
+  res.locals.adminEmail    = req.session.adminEmail || null;
+  res.locals.adminAvatar   = req.session.adminAvatar || null;
+  next();
 });
 
 // Routes
@@ -71,25 +54,14 @@ app.use('/admin', require('./routes/admin'));
 // 404
 app.use((req, res) => {
   res.status(404).render('public/error', {
-    layout: 'layouts/public',
-    title: 'Page Not Found',
-    message: 'The page you are looking for does not exist.'
+    title: '404 — Not Found',
+    message: 'The page you are looking for does not exist.',
+    layout: 'layouts/public'
   });
 });
 
-// Error handler
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).render('public/error', {
-    layout: 'layouts/public',
-    title: 'Server Error',
-    message: 'Something went wrong.'
-  });
-});
-
-const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`🚀 EduNote is running at http://localhost:${PORT}`);
-  console.log(`📚 Admin Panel: http://localhost:${PORT}/admin/login`);
+  console.log(`🚀 EduNote v2 running at http://localhost:${PORT}`);
+  console.log(`📚 Admin: http://localhost:${PORT}/admin/login`);
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
 });

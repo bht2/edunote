@@ -1,71 +1,80 @@
-<!-- Class tab switcher -->
-<div class="class-tabs-bar">
-  <div class="class-tabs-inner">
-    <% siblingClasses.forEach(sibling => { %>
-      <a href="/browse/<%= level.slug %>/<%= combo.slug %>/<%= sibling.slug %>"
-         class="class-tab <%= sibling.id === cls.id ? 'active' : '' %>"
-         style="<%= sibling.id === cls.id ? 'background:' + combo.color + ';border-color:' + combo.color : '' %>">
-        <%= sibling.name %>
-      </a>
-    <% }) %>
-  </div>
-</div>
-
-<section class="page-hero">
-  <div class="page-hero-inner">
-    <div class="breadcrumb">
-      <a href="/">Home</a><span class="breadcrumb-sep">›</span>
-      <a href="/browse">Browse</a><span class="breadcrumb-sep">›</span>
-      <a href="/browse/<%= level.slug %>"><%= level.name %></a><span class="breadcrumb-sep">›</span>
-      <a href="/browse/<%= level.slug %>/<%= combo.slug %>"><%= combo.name %></a><span class="breadcrumb-sep">›</span>
-      <span class="current"><%= cls.name %></span>
+<section class="page-header sector-page-header" style="--sector-color: <%= sector.color %>">
+  <div class="container">
+    <nav class="breadcrumb">
+      <a href="/notes">Subjects</a>
+      <span class="bc-sep">\u203a</span>
+      <a href="/notes/<%= sector.slug %>"><%= sector.name %></a>
+      <span class="bc-sep">\u203a</span>
+      <span><%= level.name %></span>
+    </nav>
+    <div class="sector-header-info" style="margin-top:1.25rem">
+      <div class="sector-icon-lg"><span><%= sector.name.charAt(0) %></span></div>
+      <div>
+        <h1><%= level.name %></h1>
+        <p style="color:rgba(255,255,255,0.7)"><%= sector.name %> &mdash; <%= notes.length %> note<%= notes.length != 1 ? 's' : '' %></p>
+      </div>
     </div>
-    <h1 class="page-hero-title"><%= combo.name %> — <%= cls.name %></h1>
-    <p class="page-hero-desc"><%= notes.length %> note<%= notes.length !== 1 ? 's' : '' %> available</p>
   </div>
 </section>
 
-<section class="section">
-  <div class="section-inner">
+<!-- Level tab switcher -->
+<% if (allLevels && allLevels.length > 1) { %>
+<div class="level-tabs-bar">
+  <div class="container">
+    <div class="level-tabs">
+      <span class="level-tabs-label">Level:</span>
+      <div class="level-tabs-list">
+        <% allLevels.forEach(l => { %>
+          <a href="/notes/<%= sector.slug %>/<%= l.slug %>"
+             class="level-tab <%= l.id === level.id ? 'active' : '' %>"
+             style="--tc: <%= l.color %>">
+            <%= l.name %>
+            <span class="tab-count"><%= l.note_count %></span>
+          </a>
+        <% }) %>
+      </div>
+    </div>
+  </div>
+</div>
+<% } %>
+
+<section class="notes-page">
+  <div class="container">
     <% if (notes.length === 0) { %>
       <div class="empty-state">
-        <div class="empty-icon">📭</div>
-        <h3>No notes yet</h3>
-        <p>Notes are being uploaded for <%= combo.name %> <%= cls.name %>. Check back soon!</p>
+        <div class="empty-icon">\ud83d\udcc4</div>
+        <h3>No notes here yet</h3>
+        <p>No notes have been added for <strong><%= level.name %></strong> in <strong><%= sector.name %></strong> yet.</p>
+        <a href="/notes/<%= sector.slug %>" class="btn btn-outline-dark" style="margin-top:1.5rem">\u2190 Choose another level</a>
       </div>
     <% } else { %>
       <div class="notes-grid">
-        <% notes.forEach(note => { %>
-          <%
-            const ext = (note.file_original_name || note.file_name || 'file').split('.').pop().toLowerCase().trim();
-            const isPdf  = ext === 'pdf';
-            const isDocx = ext === 'docx' || ext === 'doc';
-            const isTxt  = ext === 'txt';
-            const isPpt  = ext === 'ppt' || ext === 'pptx';
-            const fileSize = note.file_size ? (note.file_size > 1024*1024 ? (note.file_size/1024/1024).toFixed(1)+'MB' : Math.round(note.file_size/1024)+'KB') : '';
-            let fileIcon = '📄';
-            if (isPdf)       fileIcon = '📕';
-            else if (isDocx) fileIcon = '📝';
-            else if (isPpt)  fileIcon = '📊';
-            else if (isTxt)  fileIcon = '📃';
-            const safeTitle = note.title.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-          %>
-          <div class="note-card">
+        <% notes.forEach((note, i) => { %>
+          <div class="note-card" style="animation-delay:<%= i*0.05 %>s">
             <div class="note-card-header">
-              <div class="note-file-icon" style="background:color-mix(in srgb,<%= combo.color %> 12%,white)"><%= fileIcon %></div>
-              <div style="flex:1">
-                <h3><%= note.title %></h3>
-                <% if (fileSize) { %><div style="font-size:.75rem;color:var(--muted);margin-top:.2rem"><%= ext.toUpperCase() %> · <%= fileSize %></div><% } %>
+              <% const ext = note.file_original_name.split('.').pop().toLowerCase(); %>
+              <span class="file-badge file-badge-<%= ext %>"><%= ext.toUpperCase() %></span>
+              <div class="note-meta-small">
+                <span><%= note.file_size_formatted %></span>
+                <span>\u00b7</span>
+                <span><%= note.download_count %> downloads</span>
               </div>
             </div>
-            <% if (note.description) { %><p><%= note.description %></p><% } %>
-            <div class="note-card-meta">
-              <span class="note-tag" style="background:color-mix(in srgb,<%= combo.color %> 12%,white);color:<%= combo.color %>"><%= combo.name %> · <%= cls.name %></span>
-              <span style="margin-left:auto;color:var(--muted);font-size:.75rem"><%= new Date(note.created_at).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) %></span>
+            <div class="note-card-body">
+              <h3 class="note-title"><%= note.title %></h3>
+              <% if (note.description) { %><p class="note-desc"><%= note.description %></p><% } %>
             </div>
-            <div class="note-card-actions">
-              <button class="btn-read" onclick="openReader(<%= note.id %>,'<%= ext %>','<%= safeTitle %>')">👁 Read Online</button>
-              <a href="/download/<%= note.id %>" class="btn-download">⬇ Download</a>
+            <div class="note-card-footer">
+              <% if (ext === 'pdf') { %>
+                <a href="/view/<%= note.id %>" class="btn btn-view" target="_blank">
+                  <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                  View
+                </a>
+              <% } %>
+              <a href="/download/<%= note.id %>" class="btn btn-download">
+                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                Download
+              </a>
             </div>
           </div>
         <% }) %>
@@ -73,206 +82,3 @@
     <% } %>
   </div>
 </section>
-
-<!-- ===== READER MODAL ===== -->
-<style>
-#readerModal {
-  display: none;
-  position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  z-index: 9999;
-  flex-direction: column;
-  background: #0f0e17;
-}
-#readerModal.open { display: flex !important; }
-
-#rToolbar {
-  height: 56px;
-  min-height: 56px;
-  flex-shrink: 0;
-  background: #0f0e17;
-  border-bottom: 1px solid rgba(255,255,255,.1);
-  display: flex;
-  align-items: center;
-  gap: .75rem;
-  padding: 0 1.25rem;
-}
-
-/* This is the key fix — explicit height so scroll works */
-#rBody {
-  height: calc(100vh - 56px);
-  overflow-y: auto;
-  overflow-x: hidden;
-  position: relative;
-  background: #0f0e17;
-}
-
-/* PDF uses object tag which fills rBody fully */
-#rBody.pdf-mode {
-  overflow: hidden;
-  padding: 0;
-}
-#rBody.pdf-mode object,
-#rBody.pdf-mode iframe {
-  display: block;
-  width: 100%;
-  height: 100%;
-  border: none;
-}
-
-@keyframes rspin { to { transform: rotate(360deg); } }
-.r-spinner {
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  height: 100%; gap: 1rem; color: rgba(255,255,255,.6);
-}
-.r-ring {
-  width: 40px; height: 40px;
-  border: 3px solid rgba(255,255,255,.15);
-  border-top-color: #4f46e5;
-  border-radius: 50%;
-  animation: rspin 1s linear infinite;
-}
-.docx-page {
-  max-width: 840px; margin: 2rem auto 4rem;
-  background: white; padding: 3rem 3.5rem;
-  border-radius: 12px;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 1rem; line-height: 1.8; color: #0f0e17;
-}
-.docx-page h1,.docx-page h2,.docx-page h3,.docx-page h4 { font-family: Fraunces, serif; margin: 1.5rem 0 .6rem; color: #0f0e17; }
-.docx-page h1 { font-size: 1.9rem } .docx-page h2 { font-size: 1.5rem }
-.docx-page h3 { font-size: 1.2rem } .docx-page h4 { font-size: 1rem; font-weight: 700 }
-.docx-page p { margin-bottom: 1rem }
-.docx-page table { width: 100%; border-collapse: collapse; margin: 1.5rem 0 }
-.docx-page td,.docx-page th { border: 1px solid #e4e2f0; padding: .6rem .9rem }
-.docx-page th { background: #f8f7ff; font-weight: 600 }
-.docx-page ul,.docx-page ol { padding-left: 1.75rem; margin-bottom: 1rem }
-.docx-page li { margin-bottom: .3rem }
-.docx-page img { max-width: 100%; border-radius: 8px; margin: 1rem 0 }
-.docx-page blockquote { border-left: 4px solid #4f46e5; padding: .5rem 1rem; margin: 1rem 0; color: #6b6a7a; background: #f8f7ff; border-radius: 0 8px 8px 0 }
-.ppt-card {
-  display: flex; align-items: center; justify-content: center;
-  height: 100%; padding: 2rem;
-}
-.ppt-card-inner {
-  text-align: center; background: white; padding: 3rem 2.5rem;
-  border-radius: 16px; max-width: 480px;
-  box-shadow: 0 8px 40px rgba(0,0,0,.15);
-}
-</style>
-
-<div id="readerModal">
-  <div id="rToolbar">
-    <button onclick="closeReader()" style="background:rgba(255,255,255,.1);border:none;color:white;padding:.4rem .9rem;border-radius:8px;cursor:pointer;font-size:.875rem;">← Back</button>
-    <div id="rTitle" style="flex:1;color:white;font-size:.95rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></div>
-    <span id="rBadge" style="background:rgba(16,185,129,.2);color:#34d399;padding:.25rem .75rem;border-radius:100px;font-size:.72rem;font-weight:600;white-space:nowrap;flex-shrink:0;"></span>
-    <a id="rDownload" href="#" style="background:#4f46e5;color:white;padding:.45rem 1rem;border-radius:8px;font-size:.875rem;font-weight:600;text-decoration:none;white-space:nowrap;flex-shrink:0;">⬇ Download</a>
-  </div>
-  <div id="rBody"></div>
-</div>
-
-<script>
-const modal     = document.getElementById('readerModal');
-const rTitle    = document.getElementById('rTitle');
-const rBadge    = document.getElementById('rBadge');
-const rDownload = document.getElementById('rDownload');
-const rBody     = document.getElementById('rBody');
-
-function openReader(noteId, ext, title) {
-  rTitle.textContent = title;
-  rDownload.href     = '/download/' + noteId;
-  rBody.innerHTML    = '';
-  rBody.className    = '';
-  rBody.style.background = '#0f0e17';
-
-  modal.classList.add('open');
-  document.body.style.overflow = 'hidden';
-
-  if (ext === 'pdf') {
-    rBadge.textContent = '📕 PDF';
-    rBody.style.background = '#f0eff8';
-    rBody.style.padding = '0 1rem';
-    rBody.innerHTML = '<div class="r-spinner"><div class="r-ring"></div><span>Reading PDF…</span></div>';
-    fetch('/pdfhtml/' + noteId)
-      .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
-      .then(html => {
-        rBody.innerHTML = '<div class="docx-page">' + html + '</div>';
-      })
-      .catch(err => {
-        rBody.innerHTML = errCard(noteId, 'Could not render PDF. ' + err.message);
-      });
-
-  } else if (ext === 'docx' || ext === 'doc') {
-    rBadge.textContent = '📝 DOCX';
-    rBody.style.background = '#f0eff8';
-    rBody.style.padding = '0 1rem';
-    rBody.innerHTML = '<div class="r-spinner"><div class="r-ring"></div><span>Converting document…</span></div>';
-    fetch('/docx/' + noteId)
-      .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
-      .then(html => {
-        rBody.innerHTML = '<div class="docx-page">' + html + '</div>';
-      })
-      .catch(err => {
-        rBody.innerHTML = errCard(noteId, 'Could not convert document. ' + err.message);
-      });
-
-  } else if (ext === 'txt') {
-    rBadge.textContent = '📃 TXT';
-    rBody.style.background = '#1a1a2e';
-    rBody.style.padding = '2rem 1.5rem';
-    rBody.innerHTML = '<div class="r-spinner"><div class="r-ring"></div><span>Loading…</span></div>';
-    fetch('/text/' + noteId)
-      .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
-      .then(text => {
-        const pre = document.createElement('pre');
-        pre.style.cssText = 'max-width:820px;margin:0 auto;color:#e2e8f0;font-family:Consolas,monospace;font-size:.9rem;line-height:1.75;white-space:pre-wrap;word-break:break-word';
-        pre.textContent = text;
-        rBody.innerHTML = '';
-        rBody.appendChild(pre);
-      })
-      .catch(err => {
-        rBody.innerHTML = errCard(noteId, 'Could not load file. ' + err.message);
-      });
-
-  } else {
-    // PPT/PPTX or other — download prompt
-    const label = (ext === 'ppt' || ext === 'pptx') ? '📊 PowerPoint' : '📄 ' + ext.toUpperCase();
-    rBadge.textContent = label;
-    rBody.style.background = '#f0eff8';
-    rBody.innerHTML =
-      '<div class="ppt-card"><div class="ppt-card-inner">' +
-        '<div style="font-size:4rem;margin-bottom:1rem">' + (ext==='ppt'||ext==='pptx'?'📊':'📄') + '</div>' +
-        '<h3 style="font-family:Fraunces,serif;font-size:1.3rem;color:#0f0e17;margin-bottom:.75rem">' + esc(title) + '</h3>' +
-        '<p style="color:#6b6a7a;margin-bottom:1.5rem;font-size:.9rem">' +
-          '<strong>' + ext.toUpperCase() + '</strong> cannot be previewed in the browser. Download it to open in ' +
-          (ext==='ppt'||ext==='pptx' ? 'PowerPoint or LibreOffice.' : 'the appropriate app.') +
-        '</p>' +
-        '<a href="/download/' + noteId + '" style="background:#4f46e5;color:white;padding:.85rem 2rem;border-radius:10px;font-weight:600;display:inline-flex;align-items:center;gap:.5rem;">⬇ Download to Open</a>' +
-      '</div></div>';
-  }
-}
-
-function closeReader() {
-  modal.classList.remove('open');
-  rBody.innerHTML = '';
-  rBody.className = '';
-  rBody.style.cssText = '';
-  document.body.style.overflow = '';
-}
-
-function errCard(noteId, msg) {
-  return '<div style="display:flex;align-items:center;justify-content:center;height:100%;padding:2rem">' +
-    '<div style="text-align:center;background:white;padding:2.5rem;border-radius:16px;max-width:420px">' +
-      '<div style="font-size:3rem;margin-bottom:1rem">⚠️</div>' +
-      '<p style="color:#6b6a7a;margin-bottom:1.5rem;font-size:.9rem">' + esc(msg) + '</p>' +
-      '<a href="/download/'+noteId+'" style="background:#4f46e5;color:white;padding:.75rem 1.75rem;border-radius:10px;font-weight:600;display:inline-flex;align-items:center;gap:.5rem;">⬇ Download Instead</a>' +
-    '</div></div>';
-}
-
-function esc(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-document.addEventListener('keydown', e => { if (e.key === 'Escape') closeReader(); });
-</script>

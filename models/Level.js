@@ -31,6 +31,23 @@ class Level {
     const [result] = await db.execute('DELETE FROM levels WHERE id = ?', [id]);
     return result;
   }
+  static async findBySector(sectorId) {
+    const [rows] = await db.execute(`
+      SELECT l.*,
+        (SELECT COUNT(n.id)
+         FROM notes n
+         JOIN classes cl ON n.class_id = cl.id
+         JOIN combinations c ON cl.combination_id = c.id
+         JOIN education_levels el ON c.education_level_id = el.id
+         WHERE el.slug = l.slug
+        ) as note_count
+      FROM levels l
+      WHERE l.sector_id = ?
+      ORDER BY l.order_index ASC
+    `, [sectorId]);
+    return rows;
+  }
+
   static async countAll() {
     const [rows] = await db.execute('SELECT COUNT(*) as count FROM levels');
     return rows[0].count;

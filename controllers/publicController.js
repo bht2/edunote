@@ -88,7 +88,7 @@ const pub = {
     try {
       const sector = await Sector.findBySlug(req.params.sectorSlug);
       const level  = await Level.findBySlug(req.params.levelSlug);
-      if (!sector || !level || level.sector_id !== sector.id)
+      if (!sector || !level || level.sector_id != sector.id)
         return res.status(404).render('public/error', { title: '404', message: 'Page not found.', layout: 'layouts/public' });
 
       const notes     = await Note.findByLevel(level.id);
@@ -104,40 +104,20 @@ const pub = {
   },
 
   // GET /read/:id \u2014 full-page online reader
+  // GET /read/:id — full-page online reader (Cloudinary-hosted files)
   readNote: async (req, res) => {
     try {
       const note = await Note.findById(req.params.id);
       if (!note) return res.status(404).render('public/error', { title: '404', message: 'Note not found.', layout: 'layouts/public' });
+      if (!note.file_url) return res.status(404).render('public/error', { title: 'Error', message: 'File not found.', layout: 'layouts/public' });
 
-      const fp  = path.join(__dirname, '..', 'uploads', note.file_name);
-      if (!fs.existsSync(fp)) return res.status(404).render('public/error', { title: 'Error', message: 'File not found.', layout: 'layouts/public' });
-
-      const ext      = getExt(note.file_name);
-      let   readMode = 'unsupported';
-      let   html     = null;
-      let   txtContent = null;
-
-      if (ext === 'pdf') {
-        readMode = 'pdf';
-      } else if (ext === 'txt') {
-        readMode = 'txt';
-        txtContent = fs.readFileSync(fp, 'utf8');
-      } else if (['docx', 'doc', 'ppt', 'pptx'].includes(ext)) {
-        const result = await convertToHtml(fp, ext);
-        if (result) {
-          readMode = 'html';
-          html = result.html;
-        } else {
-          readMode = 'unsupported';
-        }
-      }
+      const ext      = getExt(note.file_original_name || note.file_name);
+      const readMode = ext === 'pdf' ? 'pdf' : 'unsupported';
 
       res.render('public/reader', {
         title: note.title + ' \u2014 Read Online',
         note: { ...note, file_size_formatted: Note.formatFileSize(note.file_size) },
-        readMode,
-        html,
-        txtContent,
+        readMode, html: null, txtContent: null,
         layout: 'layouts/reader'
       });
     } catch (e) {
@@ -146,28 +126,23 @@ const pub = {
     }
   },
 
-  // GET /download/:id
+  // GET /download/:id — redirect to Cloudinary and track download
   downloadNote: async (req, res) => {
     try {
       const note = await Note.findById(req.params.id);
       if (!note) return res.status(404).render('public/error', { title: '404', message: 'Note not found.', layout: 'layouts/public' });
-      const fp = path.join(__dirname, '..', 'uploads', note.file_name);
-      if (!fs.existsSync(fp)) return res.status(404).render('public/error', { title: 'Error', message: 'File not found.', layout: 'layouts/public' });
+      if (!note.file_url) return res.status(404).render('public/error', { title: 'Error', message: 'File not found.', layout: 'layouts/public' });
       await Note.incrementDownload(note.id);
-      res.download(fp, note.file_original_name);
+      res.redirect(note.file_url);
     } catch (e) { console.error(e); res.render('public/error', { title: 'Error', message: 'Download failed.', layout: 'layouts/public' }); }
   },
 
-  // GET /view/:id \u2014 inline PDF stream
+  // GET /view/:id — inline PDF via Cloudinary URL redirect
   viewNote: async (req, res) => {
     try {
       const note = await Note.findById(req.params.id);
-      if (!note) return res.status(404).send('Not found');
-      const fp = path.join(__dirname, '..', 'uploads', note.file_name);
-      if (!fs.existsSync(fp)) return res.status(404).send('File not found');
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `inline; filename="${note.file_original_name}"`);
-      fs.createReadStream(fp).pipe(res);
+      if (!note || !note.file_url) return res.status(404).send('Not found');
+      res.redirect(note.file_url);
     } catch (e) { console.error(e); res.status(500).send('Error'); }
   }
 };

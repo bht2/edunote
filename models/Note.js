@@ -71,6 +71,23 @@ class Note {
     await db.execute('UPDATE notes SET download_count = download_count + 1 WHERE id=?', [id]);
   }
 
+  static async findByLevel(levelId) {
+    // levels table uses same slugs as education_levels — join via matching slug
+    const [rows] = await db.execute(`
+      SELECT n.*, cl.name as class_name, c.name as combo_name, c.color as combo_color,
+             e.name as level_name, e.slug as level_slug,
+             lv.name as sector_level_name
+      FROM notes n
+      JOIN classes cl ON n.class_id = cl.id
+      JOIN combinations c ON cl.combination_id = c.id
+      JOIN education_levels e ON c.education_level_id = e.id
+      JOIN levels lv ON lv.slug = e.slug
+      WHERE lv.id = ?
+      ORDER BY c.name ASC, cl.name ASC, n.subject ASC, n.created_at DESC
+    `, [levelId]);
+    return rows;
+  }
+
   static async countAll() {
     const [[row]] = await db.execute('SELECT COUNT(*) as total FROM notes');
     return row.total;

@@ -3,11 +3,11 @@ const db = require('../config/database');
 class Sector {
   static async findAll() {
     const [rows] = await db.execute(`
-      SELECT s.*, COUNT(DISTINCT l.id) as level_count,
-             COUNT(n.id) as note_count
+      SELECT s.*,
+             COUNT(DISTINCT l.id) as level_count,
+             (SELECT COUNT(*) FROM notes) as note_count
       FROM sectors s
       LEFT JOIN levels l ON l.sector_id = s.id
-      LEFT JOIN notes n ON n.level_id = l.id
       GROUP BY s.id
       ORDER BY s.name ASC
     `);

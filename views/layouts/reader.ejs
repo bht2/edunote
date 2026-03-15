@@ -5,8 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><%= title %></title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&family=Lora:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Lora:ital,wght@0,400;0,600;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/reader.css">
+  <style>
+    /* v2 font override — keeps reader.css intact */
+    :root {
+      --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
+      --font-serif: 'Lora', Georgia, serif;
+      --font-mono: 'DM Mono', 'Courier New', monospace;
+      --accent: #7c3aed;
+      --accent-light: #ede9fe;
+    }
+    .rd-download-btn:hover { background: #6d28d9; }
+    .rd-big-download:hover { background: #6d28d9; box-shadow: 0 8px 24px rgba(124,58,237,0.3); }
+  </style>
 </head>
 <body class="reader-body">
   <%- body %>

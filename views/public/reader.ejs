@@ -1,6 +1,6 @@
-<% const ext = note.file_original_name.split('.').pop().toLowerCase(); %>
+<% const ext = (note.file_original_name || note.file_name || '').split('.').pop().toLowerCase(); %>
 
-<!-- \u2500\u2500 TOP TOOLBAR \u2500\u2500 -->
+<!-- TOP TOOLBAR -->
 <header class="rd-toolbar">
   <div class="rd-toolbar-left">
     <a href="javascript:history.back()" class="rd-back-btn">
@@ -13,11 +13,15 @@
     <span class="rd-ext-pill rd-ext-<%= ext %>"><%= ext.toUpperCase() %></span>
     <div class="rd-note-meta">
       <span class="rd-note-title"><%= note.title %></span>
-      <span class="rd-note-sub"><%= note.sector_name %> \u203a <%= note.level_name %> \u00b7 <%= note.file_size_formatted %></span>
+      <span class="rd-note-sub">
+        <%= note.level_name || note.combo_name || '' %>
+        <% if (note.class_name) { %> › <%= note.class_name %><% } %>
+        · <%= note.file_size_formatted %>
+      </span>
     </div>
   </div>
   <div class="rd-toolbar-right">
-    <% if (readMode !== 'pdf') { %>
+    <% if (readMode === 'html' || readMode === 'txt') { %>
       <span class="rd-reading-label">
         <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
           <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
@@ -35,19 +39,19 @@
   </div>
 </header>
 
-<!-- \u2500\u2500 CONTENT \u2500\u2500 -->
+<!-- CONTENT -->
 <main class="rd-main">
 
   <% if (readMode === 'pdf') { %>
-    <!-- PDF \u2014 native browser embed, best experience -->
+    <!-- PDF — embed directly via Cloudinary URL or /view proxy -->
     <iframe
-      src="/view/<%= note.id %>"
+      src="<%= note.file_url || '/view/' + note.id %>"
       class="rd-pdf-frame"
       title="<%= note.title %>">
     </iframe>
 
   <% } else if (readMode === 'html' && html) { %>
-    <!-- DOCX / DOC / PPT / PPTX \u2014 converted to HTML server-side -->
+    <!-- DOCX / DOC / PPT / PPTX — converted to HTML server-side -->
     <div class="rd-paper-wrap">
       <div class="rd-paper">
         <div class="rd-doc-content"><%- html %></div>
@@ -55,7 +59,7 @@
     </div>
 
   <% } else if (readMode === 'txt' && txtContent) { %>
-    <!-- TXT \u2014 rendered with reader typography -->
+    <!-- TXT — reader typography -->
     <div class="rd-paper-wrap">
       <div class="rd-paper rd-paper-txt">
         <pre class="rd-txt-content"><%= txtContent %></pre>
@@ -65,10 +69,10 @@
   <% } else { %>
     <!-- Unsupported / conversion failed -->
     <div class="rd-unsupported">
-      <div class="rd-unsupported-icon">\ud83d\udcce</div>
+      <div class="rd-unsupported-icon">📎</div>
       <h2>Cannot preview this file</h2>
       <p>This file type couldn't be converted for online reading.<br>
-         Download it to open it with the appropriate application on your device.</p>
+         Download it to open it with the appropriate app on your device.</p>
       <div class="rd-unsupported-meta">
         <span><strong><%= note.file_original_name %></strong></span>
         <span><%= note.file_size_formatted %></span>

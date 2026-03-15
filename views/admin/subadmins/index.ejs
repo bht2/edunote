@@ -1,71 +1,68 @@
-<div class="admin-page-header">
-  <div>
-    <h1 class="admin-page-title">Sub-Admins</h1>
-    <p class="admin-page-sub">Each sub-admin manages one education level. All combination changes require your approval.</p>
+<div class="admin-page">
+  <div class="admin-page-header">
+    <div>
+      <h1>👥 Sub-Admins</h1>
+      <p>Each sub-admin manages one education level. All combination changes require your approval.</p>
+    </div>
+    <a href="/admin/subadmins/create" class="btn btn-primary">+ Add Sub-Admin</a>
   </div>
-  <a href="/admin/subadmins/create" class="btn-primary">+ Add Sub-Admin</a>
+
+  <% if (admins.length === 0) { %>
+    <div class="admin-table-card">
+      <div class="empty-state">
+        <p>No sub-admins yet. <a href="/admin/subadmins/create">Add the first one</a></p>
+      </div>
+    </div>
+  <% } else { %>
+    <div class="admin-table-card">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Admin</th>
+            <th>Email</th>
+            <th>Assigned Level</th>
+            <th>Permissions</th>
+            <th>Created</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% admins.forEach(a => { %>
+          <tr>
+            <td>
+              <div style="display:flex;align-items:center;gap:.6rem">
+                <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#818cf8);color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.875rem;flex-shrink:0">
+                  <%= a.name.charAt(0).toUpperCase() %>
+                </div>
+                <strong><%= a.name %></strong>
+              </div>
+            </td>
+            <td style="color:var(--muted);font-size:.875rem"><%= a.email %></td>
+            <td>
+              <% if (a.level_name) { %>
+                <span style="background:var(--accent-light);color:var(--accent);padding:.25rem .75rem;border-radius:100px;font-size:.78rem;font-weight:700"><%= a.level_name %></span>
+              <% } else { %>
+                <span style="color:var(--muted-lt);font-size:.85rem">None assigned</span>
+              <% } %>
+            </td>
+            <td style="font-size:.8rem;color:var(--muted)">
+              <div>✅ Add/edit classes &amp; notes</div>
+              <div>⏳ Combo changes → need approval</div>
+            </td>
+            <td style="color:var(--muted-lt);font-size:.82rem">
+              <%= new Date(a.created_at).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) %>
+            </td>
+            <td class="table-actions">
+              <a href="/admin/subadmins/<%= a.id %>/edit" class="btn btn-sm btn-secondary">Edit</a>
+              <form action="/admin/subadmins/<%= a.id %>/delete" method="POST" style="display:inline"
+                    onsubmit="return confirm('Delete <%= a.name %>?')">
+                <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+              </form>
+            </td>
+          </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
 </div>
-
-<% if (typeof success !== 'undefined' && success && success.length) { %><div class="alert alert-success"><%= success[0] %></div><% } %>
-<% if (typeof error !== 'undefined' && error && error.length) { %><div class="alert alert-error"><%= error[0] %></div><% } %>
-
-<% if (admins.length === 0) { %>
-  <div class="admin-empty">
-    <div class="empty-icon">👥</div>
-    <h3>No sub-admins yet</h3>
-    <p>Create a sub-admin and assign them to a level. They can manage classes and notes, but combination changes need your approval.</p>
-    <a href="/admin/subadmins/create" class="btn-primary">Add First Sub-Admin</a>
-  </div>
-<% } else { %>
-<div class="admin-table-wrap">
-  <table class="admin-table">
-    <thead>
-      <tr><th>Admin</th><th>Email</th><th>Assigned Level</th><th>Permissions</th><th>Created</th><th>Actions</th></tr>
-    </thead>
-    <tbody>
-      <% admins.forEach(a => { %>
-      <tr>
-        <td>
-          <div style="display:flex;align-items:center;gap:.6rem">
-            <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#4f46e5,#7c3aed);color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.875rem;flex-shrink:0"><%= a.name.charAt(0).toUpperCase() %></div>
-            <strong><%= a.name %></strong>
-          </div>
-        </td>
-        <td style="color:var(--muted);font-size:.875rem"><%= a.email %></td>
-        <td>
-          <% if (a.level_name) { %>
-            <span style="background:#ede9fe;color:#4f46e5;padding:.25rem .75rem;border-radius:100px;font-size:.78rem;font-weight:600"><%= a.level_name %></span>
-          <% } else { %>
-            <span style="color:var(--muted);font-size:.85rem">None assigned</span>
-          <% } %>
-        </td>
-        <td style="font-size:.8rem;color:var(--muted)">
-          <div>✅ Add/edit classes & notes</div>
-          <div>⏳ Combination changes → need approval</div>
-        </td>
-        <td style="color:var(--muted);font-size:.82rem"><%= new Date(a.created_at).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) %></td>
-        <td>
-          <div style="display:flex;gap:.5rem">
-            <a href="/admin/subadmins/<%= a.id %>/edit" class="btn-sm btn-edit">Edit</a>
-            <form action="/admin/subadmins/<%= a.id %>/delete" method="POST" onsubmit="return confirm('Delete <%= a.name %>?')">
-              <button type="submit" class="btn-sm btn-delete">Delete</button>
-            </form>
-          </div>
-        </td>
-      </tr>
-      <% }) %>
-    </tbody>
-  </table>
-</div>
-<% } %>
-
-<style>
-.admin-table-wrap { background:white;border-radius:12px;border:1px solid var(--border);overflow:hidden; }
-.admin-table { width:100%;border-collapse:collapse; }
-.admin-table th { background:#f8f7ff;padding:.85rem 1.25rem;text-align:left;font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:1px solid var(--border); }
-.admin-table td { padding:1rem 1.25rem;border-bottom:1px solid #f1f0f8;font-size:.875rem;vertical-align:middle; }
-.admin-table tr:last-child td { border-bottom:none; }
-.btn-sm { padding:.3rem .75rem;border-radius:6px;font-size:.8rem;font-weight:600;cursor:pointer;border:none;text-decoration:none;display:inline-block; }
-.btn-edit { background:#ede9fe;color:#4f46e5; }
-.btn-delete { background:#fee2e2;color:#dc2626; }
-</style>

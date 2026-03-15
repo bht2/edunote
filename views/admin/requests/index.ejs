@@ -1,191 +1,179 @@
-<div class="admin-page-header">
-  <div>
-    <h1 class="admin-page-title">Change Requests</h1>
-    <p class="admin-page-sub">Review combination requests from sub-admins — nothing changes without your approval</p>
+<div class="admin-page">
+  <div class="admin-page-header">
+    <div>
+      <h1>📋 Change Requests</h1>
+      <p>Review combination requests from sub-admins — nothing changes without your approval.</p>
+    </div>
+    <% if (pendingCount > 0) { %>
+      <span style="background:#fef3c7;color:#92400e;padding:.4rem 1.125rem;border-radius:100px;font-weight:700;font-size:.85rem;flex-shrink:0">
+        ⏳ <%= pendingCount %> Pending
+      </span>
+    <% } %>
   </div>
-  <% if (pendingCount > 0) { %>
-    <span style="background:#fef3c7;color:#92400e;padding:.4rem 1rem;border-radius:100px;font-weight:700;font-size:.85rem">⏳ <%= pendingCount %> Pending</span>
-  <% } %>
-</div>
 
-<% const msgs = typeof messages !== 'undefined' ? messages : {}; %>
-<% if (msgs.success && msgs.success.length) { %><div class="alert alert-success"><%= msgs.success[0] %></div><% } %>
-<% if (msgs.error && msgs.error.length) { %><div class="alert alert-error"><%= msgs.error[0] %></div><% } %>
-
-<% if (requests.length === 0) { %>
-  <div class="admin-empty">
-    <div class="empty-icon">✅</div>
-    <h3>No requests yet</h3>
-    <p>When sub-admins want to add, edit, or delete combinations, their requests will appear here for your approval.</p>
-  </div>
-<% } else { %>
-
-<% const pending = requests.filter(r => r.status === 'pending'); %>
-<% const reviewed = requests.filter(r => r.status !== 'pending'); %>
-
-<% if (pending.length > 0) { %>
-<div style="margin-bottom:2rem">
-  <h3 style="font-size:1rem;font-weight:700;color:var(--ink);margin-bottom:1rem;display:flex;align-items:center;gap:.5rem">
-    ⏳ Awaiting Your Approval
-    <span style="background:#fef3c7;color:#92400e;padding:.15rem .6rem;border-radius:100px;font-size:.75rem"><%= pending.length %></span>
-  </h3>
-  <div style="display:flex;flex-direction:column;gap:1rem">
-    <% pending.forEach(r => { %>
-    <%
-      const d = r.requested_data
-        ? (typeof r.requested_data === 'string' ? JSON.parse(r.requested_data) : r.requested_data)
-        : {};
-      const typeLabel = r.request_type === 'create' ? '➕ New Combination' :
-                        r.request_type === 'edit'   ? '✏️ Edit Combination' : '🗑 Delete Combination';
-      const typeColor = r.request_type === 'create' ? '#d1fae5,#065f46' :
-                        r.request_type === 'edit'   ? '#dbeafe,#1e40af' : '#fee2e2,#dc2626';
-      const [typeBg, typeFg] = typeColor.split(',');
-    %>
-    <div class="request-card request-pending">
-      <div class="request-card-header">
-        <div style="display:flex;align-items:center;gap:.75rem">
-          <div class="req-avatar"><%= r.admin_name.charAt(0).toUpperCase() %></div>
-          <div>
-            <strong><%= r.admin_name %></strong>
-            <div style="font-size:.8rem;color:var(--muted)"><%= r.admin_email || '' %></div>
-          </div>
-        </div>
-        <div style="display:flex;align-items:center;gap:.75rem">
-          <span style="background:<%= typeBg %>;color:<%= typeFg %>;padding:.2rem .75rem;border-radius:100px;font-size:.78rem;font-weight:700"><%= typeLabel %></span>
-          <span style="font-size:.8rem;color:var(--muted)"><%= new Date(r.created_at).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) %></span>
-        </div>
-      </div>
-
-      <div class="request-card-body">
-        <div class="req-info-row">
-          <span class="req-label">Level</span>
-          <span class="req-value"><strong><%= r.level_name %></strong></span>
-        </div>
-
-        <% if (r.request_type === 'create') { %>
-          <div class="req-info-row">
-            <span class="req-label">New Combination Name</span>
-            <span class="req-value"><strong style="color:#065f46"><%= d.name %></strong></span>
-          </div>
-          <% if (d.description) { %>
-          <div class="req-info-row">
-            <span class="req-label">Description</span>
-            <span class="req-value"><%= d.description %></span>
-          </div>
-          <% } %>
-          <div class="req-info-row">
-            <span class="req-label">What happens if approved</span>
-            <span class="req-value" style="color:#065f46">A new combination "<%= d.name %>" will be created under <%= r.level_name %></span>
-          </div>
-
-        <% } else if (r.request_type === 'edit') { %>
-          <div class="req-info-row">
-            <span class="req-label">Current Combination</span>
-            <span class="req-value" style="display:flex;align-items:center;gap:.4rem">
-              <span style="width:10px;height:10px;border-radius:50%;background:<%= r.combo_color || '#6366f1' %>"></span>
-              <%= r.combo_name %>
-            </span>
-          </div>
-          <div class="req-info-row">
-            <span class="req-label">Requested New Name</span>
-            <span class="req-value"><strong><%= d.name %></strong></span>
-          </div>
-          <% if (d.description) { %>
-          <div class="req-info-row">
-            <span class="req-label">New Description</span>
-            <span class="req-value"><%= d.description %></span>
-          </div>
-          <% } %>
-
-        <% } else if (r.request_type === 'delete') { %>
-          <div class="req-info-row">
-            <span class="req-label">Combination to Delete</span>
-            <span class="req-value" style="display:flex;align-items:center;gap:.4rem">
-              <span style="width:10px;height:10px;border-radius:50%;background:<%= r.combo_color || '#6366f1' %>"></span>
-              <strong><%= r.combo_name %></strong>
-            </span>
-          </div>
-          <div class="req-info-row">
-            <span class="req-label">⚠️ Warning</span>
-            <span class="req-value" style="color:#dc2626;font-weight:600">This will permanently delete the combination and ALL its classes and notes</span>
-          </div>
-        <% } %>
-      </div>
-
-      <div class="request-card-actions">
-        <form action="/admin/requests/<%= r.id %>/approve" method="POST" style="display:inline">
-          <button type="submit" class="btn-approve" onclick="return confirm('Approve and apply this change now?')">✅ Approve & Apply</button>
-        </form>
-        <form action="/admin/requests/<%= r.id %>/reject" method="POST" style="display:inline" onsubmit="return handleReject(this)">
-          <input type="hidden" name="reason" class="reject-reason-input" value="">
-          <button type="submit" class="btn-reject">❌ Reject</button>
-        </form>
+  <% if (requests.length === 0) { %>
+    <div class="admin-table-card">
+      <div class="empty-state">
+        <p>✅ No requests yet. When sub-admins submit combination changes, they'll appear here.</p>
       </div>
     </div>
-    <% }) %>
-  </div>
+  <% } else { %>
+
+    <% const pending  = requests.filter(r => r.status === 'pending'); %>
+    <% const reviewed = requests.filter(r => r.status !== 'pending'); %>
+
+    <% if (pending.length > 0) { %>
+      <div style="margin-bottom:2rem">
+        <h2 style="font-size:.875rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:1rem">
+          Awaiting Approval
+          <span style="background:#fef3c7;color:#92400e;padding:.15rem .6rem;border-radius:100px;font-size:.75rem;margin-left:.5rem"><%= pending.length %></span>
+        </h2>
+        <div style="display:flex;flex-direction:column;gap:1rem">
+          <% pending.forEach(r => { %>
+          <%
+            const d = r.requested_data
+              ? (typeof r.requested_data === 'string' ? JSON.parse(r.requested_data) : r.requested_data)
+              : {};
+            const typeLabel = r.request_type === 'create' ? '➕ New Combination'
+                            : r.request_type === 'edit'   ? '✏️ Edit Combination'
+                                                          : '🗑️ Delete Combination';
+            const typeBg = r.request_type === 'create' ? '#d1fae5' : r.request_type === 'edit' ? '#dbeafe' : '#fee2e2';
+            const typeFg = r.request_type === 'create' ? '#065f46' : r.request_type === 'edit' ? '#1e40af' : '#dc2626';
+          %>
+          <div class="admin-table-card" style="border-left:4px solid #f59e0b;overflow:visible">
+            <!-- Header -->
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1.25rem;background:#fffbeb;border-bottom:1px solid #fef3c7;flex-wrap:wrap;gap:.75rem">
+              <div style="display:flex;align-items:center;gap:.75rem">
+                <div style="width:36px;height:36px;border-radius:50%;background:var(--accent);color:white;display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0">
+                  <%= r.admin_name.charAt(0).toUpperCase() %>
+                </div>
+                <div>
+                  <strong><%= r.admin_name %></strong>
+                  <div style="font-size:.78rem;color:var(--muted)"><%= r.admin_email || '' %></div>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:.75rem">
+                <span style="background:<%= typeBg %>;color:<%= typeFg %>;padding:.2rem .75rem;border-radius:100px;font-size:.78rem;font-weight:700"><%= typeLabel %></span>
+                <span style="font-size:.8rem;color:var(--muted-lt)">
+                  <%= new Date(r.created_at).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) %>
+                </span>
+              </div>
+            </div>
+
+            <!-- Body -->
+            <div style="padding:1.25rem;display:flex;flex-direction:column;gap:.75rem">
+              <div style="display:flex;gap:1rem;align-items:flex-start">
+                <span style="font-size:.8rem;font-weight:700;color:var(--muted);min-width:160px;flex-shrink:0">Level</span>
+                <span style="font-size:.875rem"><strong><%= r.level_name %></strong></span>
+              </div>
+
+              <% if (r.request_type === 'create') { %>
+                <div style="display:flex;gap:1rem;align-items:flex-start">
+                  <span style="font-size:.8rem;font-weight:700;color:var(--muted);min-width:160px;flex-shrink:0">New Name</span>
+                  <span style="font-size:.875rem;color:#065f46;font-weight:700"><%= d.name %></span>
+                </div>
+                <% if (d.full_name) { %>
+                <div style="display:flex;gap:1rem;align-items:flex-start">
+                  <span style="font-size:.8rem;font-weight:700;color:var(--muted);min-width:160px;flex-shrink:0">Full Name</span>
+                  <span style="font-size:.875rem"><%= d.full_name %></span>
+                </div>
+                <% } %>
+                <% if (d.description) { %>
+                <div style="display:flex;gap:1rem;align-items:flex-start">
+                  <span style="font-size:.8rem;font-weight:700;color:var(--muted);min-width:160px;flex-shrink:0">Description</span>
+                  <span style="font-size:.875rem"><%= d.description %></span>
+                </div>
+                <% } %>
+
+              <% } else if (r.request_type === 'edit') { %>
+                <div style="display:flex;gap:1rem;align-items:flex-start">
+                  <span style="font-size:.8rem;font-weight:700;color:var(--muted);min-width:160px;flex-shrink:0">Current</span>
+                  <span style="display:flex;align-items:center;gap:.4rem">
+                    <span style="width:10px;height:10px;border-radius:50%;background:<%= r.combo_color || '#6366f1' %>;flex-shrink:0"></span>
+                    <%= r.combo_name %>
+                  </span>
+                </div>
+                <div style="display:flex;gap:1rem;align-items:flex-start">
+                  <span style="font-size:.8rem;font-weight:700;color:var(--muted);min-width:160px;flex-shrink:0">Requested Name</span>
+                  <span style="font-size:.875rem;font-weight:700"><%= d.name %></span>
+                </div>
+
+              <% } else if (r.request_type === 'delete') { %>
+                <div style="display:flex;gap:1rem;align-items:flex-start">
+                  <span style="font-size:.8rem;font-weight:700;color:var(--muted);min-width:160px;flex-shrink:0">Combination</span>
+                  <span style="display:flex;align-items:center;gap:.4rem">
+                    <span style="width:10px;height:10px;border-radius:50%;background:<%= r.combo_color || '#6366f1' %>;flex-shrink:0"></span>
+                    <strong><%= r.combo_name %></strong>
+                  </span>
+                </div>
+                <div style="display:flex;gap:1rem;align-items:flex-start">
+                  <span style="font-size:.8rem;font-weight:700;color:var(--muted);min-width:160px;flex-shrink:0">⚠️ Warning</span>
+                  <span style="font-size:.875rem;color:#dc2626;font-weight:700">This will permanently delete the combination and ALL its classes and notes</span>
+                </div>
+              <% } %>
+            </div>
+
+            <!-- Actions -->
+            <div style="padding:.875rem 1.25rem;background:var(--bg);border-top:1px solid var(--border);display:flex;gap:.75rem">
+              <form action="/admin/requests/<%= r.id %>/approve" method="POST" style="display:inline">
+                <button type="submit" class="btn btn-sm" style="background:#d1fae5;color:#065f46;border:1px solid #a7f3d0"
+                        onclick="return confirm('Approve and apply this change now?')">
+                  ✅ Approve &amp; Apply
+                </button>
+              </form>
+              <form action="/admin/requests/<%= r.id %>/reject" method="POST" style="display:inline"
+                    onsubmit="return handleReject(this)">
+                <input type="hidden" name="reason" class="reject-reason-input" value="">
+                <button type="submit" class="btn btn-sm btn-danger">❌ Reject</button>
+              </form>
+            </div>
+          </div>
+          <% }) %>
+        </div>
+      </div>
+    <% } %>
+
+    <% if (reviewed.length > 0) { %>
+      <div>
+        <h2 style="font-size:.875rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:1rem">Past Requests</h2>
+        <div class="admin-table-card">
+          <table class="admin-table">
+            <thead>
+              <tr><th>Sub-Admin</th><th>Type</th><th>Level</th><th>Combination</th><th>Status</th><th>Date</th></tr>
+            </thead>
+            <tbody>
+              <% reviewed.forEach(r => { %>
+              <tr>
+                <td><%= r.admin_name %></td>
+                <td>
+                  <span style="padding:.2rem .65rem;border-radius:100px;font-size:.75rem;font-weight:700;
+                    background:<%= r.request_type==='create'?'#d1fae5':r.request_type==='edit'?'#dbeafe':'#fee2e2' %>;
+                    color:<%= r.request_type==='create'?'#065f46':r.request_type==='edit'?'#1e40af':'#dc2626' %>">
+                    <%= r.request_type === 'create' ? '➕ New' : r.request_type === 'edit' ? '✏️ Edit' : '🗑️ Delete' %>
+                  </span>
+                </td>
+                <td><%= r.level_name %></td>
+                <td><%= r.combo_name || '—' %></td>
+                <td>
+                  <span style="padding:.2rem .65rem;border-radius:100px;font-size:.75rem;font-weight:700;
+                    background:<%= r.status==='approved'?'#d1fae5':'#fee2e2' %>;
+                    color:<%= r.status==='approved'?'#065f46':'#dc2626' %>">
+                    <%= r.status === 'approved' ? '✅ Approved' : '❌ Rejected' %>
+                  </span>
+                </td>
+                <td style="font-size:.82rem;color:var(--muted-lt)">
+                  <%= new Date(r.created_at).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) %>
+                </td>
+              </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    <% } %>
+
+  <% } %>
 </div>
-<% } %>
-
-<% if (reviewed.length > 0) { %>
-<div>
-  <h3 style="font-size:1rem;font-weight:700;color:var(--muted);margin-bottom:1rem">📋 Past Requests</h3>
-  <div class="admin-table-wrap">
-    <table class="admin-table">
-      <thead><tr><th>Sub-Admin</th><th>Type</th><th>Level</th><th>Combination</th><th>Status</th><th>Date</th></tr></thead>
-      <tbody>
-        <% reviewed.forEach(r => { %>
-        <tr>
-          <td><%= r.admin_name %></td>
-          <td>
-            <span class="req-type-badge req-type-<%= r.request_type %>">
-              <%= r.request_type === 'create' ? '➕ New' : r.request_type === 'edit' ? '✏️ Edit' : '🗑 Delete' %>
-            </span>
-          </td>
-          <td><%= r.level_name %></td>
-          <td><%= r.combo_name || '—' %></td>
-          <td>
-            <span class="req-status-badge req-status-<%= r.status %>">
-              <%= r.status === 'approved' ? '✅ Approved' : '❌ Rejected' %>
-            </span>
-          </td>
-          <td style="font-size:.82rem;color:var(--muted)"><%= new Date(r.created_at).toLocaleDateString() %></td>
-        </tr>
-        <% }) %>
-      </tbody>
-    </table>
-  </div>
-</div>
-<% } %>
-
-<% } %>
-
-<style>
-.request-card { background:white; border-radius:12px; border:1px solid var(--border); overflow:hidden; }
-.request-pending { border-left:4px solid #f59e0b; }
-.request-card-header { display:flex; justify-content:space-between; align-items:center; padding:1rem 1.25rem; background:#fffbeb; border-bottom:1px solid #fef3c7; flex-wrap:wrap; gap:.5rem; }
-.request-card-body { padding:1.25rem; display:flex; flex-direction:column; gap:.75rem; }
-.request-card-actions { padding:.75rem 1.25rem; background:var(--surface); border-top:1px solid var(--border); display:flex; gap:.75rem; }
-.req-avatar { width:36px;height:36px;border-radius:50%;background:#4f46e5;color:white;display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0 }
-.req-info-row { display:flex; gap:1rem; align-items:flex-start; }
-.req-label { font-size:.8rem; font-weight:600; color:var(--muted); min-width:160px; flex-shrink:0; }
-.req-value { font-size:.875rem; color:var(--ink); }
-.btn-approve { background:#d1fae5;color:#065f46;border:none;padding:.5rem 1.25rem;border-radius:8px;font-weight:700;cursor:pointer;font-size:.875rem; }
-.btn-approve:hover { background:#a7f3d0; }
-.btn-reject { background:#fee2e2;color:#dc2626;border:none;padding:.5rem 1.25rem;border-radius:8px;font-weight:700;cursor:pointer;font-size:.875rem; }
-.btn-reject:hover { background:#fecaca; }
-.admin-table-wrap { background:white; border-radius:12px; border:1px solid var(--border); overflow:hidden; }
-.admin-table { width:100%; border-collapse:collapse; }
-.admin-table th { background:#f8f7ff;padding:.85rem 1.25rem;text-align:left;font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);border-bottom:1px solid var(--border); }
-.admin-table td { padding:.85rem 1.25rem;border-bottom:1px solid #f1f0f8;font-size:.875rem;vertical-align:middle; }
-.admin-table tr:last-child td { border-bottom:none; }
-.req-type-badge,.req-status-badge { padding:.2rem .65rem;border-radius:100px;font-size:.75rem;font-weight:600; }
-.req-type-create { background:#d1fae5;color:#065f46; }
-.req-type-edit { background:#dbeafe;color:#1e40af; }
-.req-type-delete { background:#fee2e2;color:#dc2626; }
-.req-status-approved { background:#d1fae5;color:#065f46; }
-.req-status-rejected { background:#fee2e2;color:#dc2626; }
-</style>
 
 <script>
 function handleReject(form) {

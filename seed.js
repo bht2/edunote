@@ -26,8 +26,28 @@ async function seed() {
       password VARCHAR(255) NOT NULL,
       name VARCHAR(100) NOT NULL DEFAULT 'Admin',
       avatar VARCHAR(255) DEFAULT NULL,
+      role VARCHAR(20) DEFAULT 'admin',
+      level_id INT DEFAULT NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       PRIMARY KEY (id)
+    )`);
+
+    await db.execute(`CREATE TABLE IF NOT EXISTS combo_requests (
+      id INT NOT NULL AUTO_INCREMENT,
+      sub_admin_id INT NOT NULL,
+      education_level_id INT NOT NULL,
+      combo_id INT DEFAULT NULL,
+      request_type ENUM('create','edit','delete') NOT NULL,
+      requested_data JSON,
+      status ENUM('pending','approved','rejected') DEFAULT 'pending',
+      reviewed_by INT DEFAULT NULL,
+      reviewed_at TIMESTAMP NULL DEFAULT NULL,
+      rejection_reason TEXT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (id),
+      FOREIGN KEY (sub_admin_id) REFERENCES admins(id) ON DELETE CASCADE,
+      FOREIGN KEY (education_level_id) REFERENCES education_levels(id) ON DELETE CASCADE,
+      FOREIGN KEY (combo_id) REFERENCES combinations(id) ON DELETE SET NULL
     )`);
 
     await db.execute(`CREATE TABLE education_levels (

@@ -2,6 +2,7 @@ const db     = require('../config/database');
 const bcrypt = require('bcryptjs');
 
 class Admin {
+
   static async findByEmail(email) {
     const [rows] = await db.execute('SELECT * FROM admins WHERE email = ?', [email]);
     return rows[0] || null;
@@ -12,17 +13,18 @@ class Admin {
     return rows[0] || null;
   }
 
-  // Returns all admins joined with their assigned education level name
+  // All admins joined with their assigned level name
   static async findAll() {
     const [rows] = await db.execute(`
-      SELECT a.*, el.name as level_name
+      SELECT a.*, el.name as level_name, el.color as level_color, el.icon as level_icon
       FROM admins a
       LEFT JOIN education_levels el ON a.level_id = el.id
-      ORDER BY a.created_at ASC
+      ORDER BY a.role ASC, a.created_at ASC
     `);
     return rows;
   }
 
+  // Create a new admin or sub-admin
   static async create({ name, email, password, role = 'sub', level_id = null }) {
     const hashed = await bcrypt.hash(password, 12);
     const [result] = await db.execute(

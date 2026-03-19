@@ -5,7 +5,6 @@ const Note           = require('../models/Note');
 const path           = require('path');
 const fs             = require('fs');
 const os             = require('os');
-const { execSync }   = require('child_process');
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -14,99 +13,55 @@ function getExt(filename) {
   return path.extname(filename).toLowerCase().replace('.', '');
 }
 
-function downloadToTemp(url, ext) {
-  return new Promise((resolve, reject) => {
-    const tmpFile = path.join(os.tmpdir(), `edunote_${Date.now()}.${ext}`);
-    const file    = fs.createWriteStream(tmpFile);
-
-    function doRequest(reqUrl, hops) {
-      if (hops > 5) return reject(new Error('Too many redirects'));
-      const proto = reqUrl.startsWith('https') ? require('https') : require('http');
-      proto.get(reqUrl, res => {
-        if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
-          res.resume();
-          return doRequest(res.headers.location, hops + 1);
-        }
-        if (res.statusCode !== 200) {
-          res.resume(); file.close(); fs.unlink(tmpFile, () => {});
-          return reject(new Error(`HTTP ${res.statusCode}`));
-        }
-        res.pipe(file);
-        file.on('finish', () => { file.close(); resolve(tmpFile); });
-        file.on('error',  err => { fs.unlink(tmpFile, () => {}); reject(err); });
-      }).on('error', err => { file.close(); fs.unlink(tmpFile, () => {}); reject(err); });
+// Stream a remote URL through our server to the browser response.
+// Follows redirects and strips X-Frame-Options so PDFs work in iframes.
+function proxyStream(url, res, hops) {
+  if (hops > 10) { if (!res.headersSent) res.status(500).send('Too many redirects'); return; }
+  const proto = url.startsWith('https') ? require('https') : require('http');
+  const req   = proto.get(url, (upstream) => {
+    if (upstream.statusCode >= 300 && upstream.statusCode < 400 && upstream.headers.location) {
+      upstream.resume();
+      return proxyStream(upstream.headers.location, res, hops + 1);
     }
-    doRequest(url, 0);
+    if (upstream.statusCode !== 200) {
+      upstream.resume();
+      if (!res.headersSent) res.status(upstream.statusCode || 502).send('File unavailable');
+      return;
+    }
+    res.setHeader('Content-Type', upstream.headers['content-type'] || 'application/pdf');
+    res.setHeader('Content-Disposition', 'inline');
+    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+    res.removeHeader('Content-Security-Policy');
+    upstream.pipe(res);
+  });
+  req.on('error', (err) => {
+    console.error('[proxy] error:', err.message);
+    if (!res.headersSent) res.status(502).send('Proxy error: ' + err.message);
+  });
+  req.setTimeout(30000, () => {
+    req.destroy();
+    if (!res.headersSent) res.status(504).send('Proxy timeout');
   });
 }
 
-async function convertToHtml(filePath, ext) {
-  if (ext === 'docx') {
-    try {
-      const mammoth = require('mammoth');
-      const result  = await mammoth.convertToHtml({ path: filePath });
-      return { html: result.value };
-    } catch (e) { console.error('mammoth error:', e.message); }
-  }
-  if (['doc', 'ppt', 'pptx'].includes(ext)) {
-    try {
-      const tmpDir = path.join(os.tmpdir(), 'edunote-convert');
-      if (!fs.existsSync(tmpDir)) fs.mkdirSync(tmpDir, { recursive: true });
-      execSync(`libreoffice --headless --convert-to html --outdir "${tmpDir}" "${filePath}"`,
-        { timeout: 30000, stdio: 'pipe' });
-      const outFile = path.join(tmpDir, path.basename(filePath, path.extname(filePath)) + '.html');
-      if (fs.existsSync(outFile)) {
-        let html = fs.readFileSync(outFile, 'utf8');
-        const m  = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
-        if (m) html = m[1];
-        html = html.replace(/<meta[^>]*>/gi, '').replace(/<link[^>]*>/gi, '');
-        fs.unlinkSync(outFile);
-        return { html };
-      }
-    } catch (e) { console.error('LibreOffice error:', e.message); }
-  }
-  return null;
-}
+// Determine how to render a note in the reader.
+// Returns { readMode, fileUrl }
+// readMode values:
+//   'pdf'      → proxy through /view/:id → iframe
+//   'office'   → Google Docs Viewer iframe (DOCX, DOC, PPT, PPTX)
+//   'txt'      → browser-side fetch + display
+//   'unsupported' → show download prompt
+function getReadMode(note) {
+  const ext    = getExt(note.file_original_name) || getExt(note.file_name);
+  const url    = note.file_url || '';
 
-async function getFileContent(note) {
-  const ext = getExt(note.file_original_name) || getExt(note.file_name);
-  if (!ext) return { readMode: 'unsupported', html: null, txtContent: null };
-  if (ext === 'pdf') return { readMode: 'pdf', html: null, txtContent: null };
+  if (!ext || !url) return { readMode: 'unsupported', fileUrl: url };
 
-  const fileUrl = note.file_url;
+  if (ext === 'pdf')                              return { readMode: 'pdf',     fileUrl: url };
+  if (['docx','doc','ppt','pptx'].includes(ext))  return { readMode: 'office',  fileUrl: url };
+  if (ext === 'txt')                              return { readMode: 'txt',     fileUrl: url };
 
-  // No Cloudinary URL — try legacy local uploads
-  if (!fileUrl) {
-    const fp = path.join(__dirname, '..', 'uploads', note.file_name);
-    if (!fs.existsSync(fp)) return { readMode: 'unsupported', html: null, txtContent: null };
-    if (ext === 'txt') return { readMode: 'txt', txtContent: fs.readFileSync(fp, 'utf8'), html: null };
-    const r = await convertToHtml(fp, ext);
-    return r ? { readMode: 'html', html: r.html, txtContent: null }
-             : { readMode: 'unsupported', html: null, txtContent: null };
-  }
-
-  // Download from Cloudinary then convert
-  let tmpPath = null;
-  try {
-    tmpPath = await downloadToTemp(fileUrl, ext);
-    if (ext === 'txt') {
-      const txt = fs.readFileSync(tmpPath, 'utf8');
-      fs.unlink(tmpPath, () => {});
-      return { readMode: 'txt', txtContent: txt, html: null };
-    }
-    if (['docx','doc','ppt','pptx'].includes(ext)) {
-      const r = await convertToHtml(tmpPath, ext);
-      fs.unlink(tmpPath, () => {});
-      return r ? { readMode: 'html', html: r.html, txtContent: null }
-               : { readMode: 'unsupported', html: null, txtContent: null };
-    }
-    fs.unlink(tmpPath, () => {});
-    return { readMode: 'unsupported', html: null, txtContent: null };
-  } catch (e) {
-    if (tmpPath) fs.unlink(tmpPath, () => {});
-    console.error('getFileContent error:', e.message);
-    return { readMode: 'unsupported', html: null, txtContent: null };
-  }
+  return { readMode: 'unsupported', fileUrl: url };
 }
 
 // ── controller ────────────────────────────────────────────────────────────────
@@ -148,7 +103,7 @@ const pub = {
     }
   },
 
-  // GET /notes/:levelSlug  — pick a combination
+  // GET /notes/:levelSlug
   getCombinations: async (req, res) => {
     try {
       const level = await EducationLevel.findBySlug(req.params.levelSlug);
@@ -156,8 +111,7 @@ const pub = {
       const combinations = await Combination.findByLevel(level.id);
       res.render('public/combinations', {
         title: `${level.name} — Choose Combination`,
-        level, combinations,
-        layout: 'layouts/public'
+        level, combinations, layout: 'layouts/public'
       });
     } catch (e) {
       console.error(e);
@@ -165,21 +119,18 @@ const pub = {
     }
   },
 
-  // GET /notes/:levelSlug/:comboSlug  — pick a class
+  // GET /notes/:levelSlug/:comboSlug
   getClasses: async (req, res) => {
     try {
       const level = await EducationLevel.findBySlug(req.params.levelSlug);
       const combo = await Combination.findBySlug(req.params.comboSlug);
       if (!level || !combo || combo.education_level_id !== level.id)
         return res.status(404).render('public/error', { title: '404', message: 'Page not found.', layout: 'layouts/public' });
-
       const classes   = await Class.findByCombination(combo.id);
       const allCombos = await Combination.findByLevel(level.id);
-
       res.render('public/classes', {
         title: `${combo.name} — Choose Class`,
-        level, combo, classes, allCombos,
-        layout: 'layouts/public'
+        level, combo, classes, allCombos, layout: 'layouts/public'
       });
     } catch (e) {
       console.error(e);
@@ -187,26 +138,22 @@ const pub = {
     }
   },
 
-  // GET /notes/:levelSlug/:comboSlug/:classSlug  — notes for this class
+  // GET /notes/:levelSlug/:comboSlug/:classSlug
   getNotes: async (req, res) => {
     try {
       const level = await EducationLevel.findBySlug(req.params.levelSlug);
       const combo = await Combination.findBySlug(req.params.comboSlug);
       const cls   = await Class.findBySlug(req.params.classSlug);
-
       if (!level || !combo || !cls
           || combo.education_level_id !== level.id
           || cls.combination_id      !== combo.id)
         return res.status(404).render('public/error', { title: '404', message: 'Page not found.', layout: 'layouts/public' });
-
-      const notes     = await Note.findByClass(cls.id);
+      const notes      = await Note.findByClass(cls.id);
       const allClasses = await Class.findByCombination(combo.id);
       const allCombos  = await Combination.findByLevel(level.id);
-
       res.render('public/notes', {
         title: `${cls.name} — ${combo.name} Notes`,
-        level, combo, cls,
-        allCombos, allClasses,
+        level, combo, cls, allCombos, allClasses,
         notes: notes.map(n => ({ ...n, file_size_formatted: Note.formatFileSize(n.file_size) })),
         layout: 'layouts/public'
       });
@@ -216,16 +163,24 @@ const pub = {
     }
   },
 
-  // GET /read/:id
+  // GET /read/:id — reader page
+  // PDF    → /view/:id proxied through server (avoids Cloudinary X-Frame-Options)
+  // Office → Google Docs Viewer iframe (Google fetches from Cloudinary, we don't)
+  // TXT    → browser fetches file_url via JS fetch()
   readNote: async (req, res) => {
     try {
       const note = await Note.findById(req.params.id);
       if (!note) return res.status(404).render('public/error', { title: '404', message: 'Note not found.', layout: 'layouts/public' });
-      const fileData = await getFileContent(note);
+
+      const { readMode, fileUrl } = getReadMode(note);
+
       res.render('public/reader', {
-        title: `${note.title} — Read Online`,
-        note:  { ...note, file_size_formatted: Note.formatFileSize(note.file_size) },
-        readMode: fileData.readMode, html: fileData.html, txtContent: fileData.txtContent,
+        title:    `${note.title} — Read Online`,
+        note:     { ...note, file_size_formatted: Note.formatFileSize(note.file_size) },
+        readMode,
+        fileUrl,
+        html:       null,
+        txtContent: null,
         layout: 'layouts/reader'
       });
     } catch (e) {
@@ -250,20 +205,23 @@ const pub = {
     }
   },
 
-  // GET /view/:id — inline PDF
+  // GET /view/:id — proxy PDF bytes through server so iframe works
+  // (Cloudinary sends X-Frame-Options: DENY, we strip it)
   viewNote: async (req, res) => {
     try {
       const note = await Note.findById(req.params.id);
       if (!note) return res.status(404).send('Not found');
-      if (note.file_url) return res.redirect(note.file_url);
+      if (note.file_url) return proxyStream(note.file_url, res, 0);
+      // Legacy local file
       const fp = path.join(__dirname, '..', 'uploads', note.file_name);
       if (!fs.existsSync(fp)) return res.status(404).send('File not found');
       res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `inline; filename="${note.file_original_name}"`);
+      res.setHeader('Content-Disposition', 'inline');
+      res.setHeader('X-Frame-Options', 'SAMEORIGIN');
       fs.createReadStream(fp).pipe(res);
     } catch (e) {
       console.error(e);
-      res.status(500).send('Error');
+      if (!res.headersSent) res.status(500).send('Error');
     }
   }
 };

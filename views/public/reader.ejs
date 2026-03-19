@@ -1,6 +1,7 @@
-<% const ext = (note.file_original_name || note.file_name || '').split('.').pop().toLowerCase(); %>
+<% const ext = (note.file_original_name || '').split('.').pop().toLowerCase(); %>
+<% const googleViewerUrl = 'https://docs.google.com/viewer?url=' + encodeURIComponent(fileUrl) + '&embedded=true'; %>
 
-<!-- TOP TOOLBAR -->
+<!-- TOOLBAR -->
 <header class="rd-toolbar">
   <div class="rd-toolbar-left">
     <a href="javascript:history.back()" class="rd-back-btn">
@@ -21,7 +22,7 @@
     </div>
   </div>
   <div class="rd-toolbar-right">
-    <% if (readMode === 'html' || readMode === 'txt') { %>
+    <% if (readMode === 'office' || readMode === 'txt') { %>
       <span class="rd-reading-label">
         <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
           <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
@@ -43,36 +44,59 @@
 <main class="rd-main">
 
   <% if (readMode === 'pdf') { %>
-    <!-- PDF — embed directly via Cloudinary URL or /view proxy -->
+    <%# PDF — /view/:id proxies from Cloudinary through our server, stripping X-Frame-Options %>
     <iframe
-      src="<%= note.file_url || '/view/' + note.id %>"
+      src="/view/<%= note.id %>"
       class="rd-pdf-frame"
       title="<%= note.title %>">
     </iframe>
 
-  <% } else if (readMode === 'html' && html) { %>
-    <!-- DOCX / DOC / PPT / PPTX — converted to HTML server-side -->
-    <div class="rd-paper-wrap">
-      <div class="rd-paper">
-        <div class="rd-doc-content"><%- html %></div>
+  <% } else if (readMode === 'office') { %>
+    <%# DOCX / DOC / PPT / PPTX — Google Docs Viewer fetches the file, no server download needed %>
+    <div class="rd-office-wrap">
+      <div class="rd-office-loading" id="officeLoading">
+        <div class="rd-loading-spinner"></div>
+        <p>Loading document viewer…</p>
       </div>
+      <iframe
+        id="officeFrame"
+        src="<%= googleViewerUrl %>"
+        class="rd-office-frame"
+        title="<%= note.title %>"
+        style="display:none"
+        onload="document.getElementById('officeLoading').style.display='none'; this.style.display='block';">
+      </iframe>
     </div>
 
-  <% } else if (readMode === 'txt' && txtContent) { %>
-    <!-- TXT — reader typography -->
+  <% } else if (readMode === 'txt') { %>
+    <%# TXT — browser fetches directly from Cloudinary via JS %>
     <div class="rd-paper-wrap">
       <div class="rd-paper rd-paper-txt">
-        <pre class="rd-txt-content"><%= txtContent %></pre>
+        <div id="txtLoading" style="text-align:center;padding:3rem;color:#6b6b80">Loading…</div>
+        <pre class="rd-txt-content" id="txtContent" style="display:none"></pre>
       </div>
     </div>
+    <script>
+      fetch('<%= fileUrl %>')
+        .then(r => r.text())
+        .then(txt => {
+          document.getElementById('txtLoading').style.display = 'none';
+          const el = document.getElementById('txtContent');
+          el.textContent = txt;
+          el.style.display = 'block';
+        })
+        .catch(err => {
+          document.getElementById('txtLoading').textContent = 'Could not load file. Please download it instead.';
+        });
+    </script>
 
   <% } else { %>
-    <!-- Unsupported / conversion failed -->
+    <!-- Unsupported format -->
     <div class="rd-unsupported">
       <div class="rd-unsupported-icon">📎</div>
       <h2>Cannot preview this file</h2>
-      <p>This file type couldn't be converted for online reading.<br>
-         Download it to open it with the appropriate app on your device.</p>
+      <p>This file type cannot be previewed online.<br>
+         Download it to open with the right app on your device.</p>
       <div class="rd-unsupported-meta">
         <span><strong><%= note.file_original_name %></strong></span>
         <span><%= note.file_size_formatted %></span>

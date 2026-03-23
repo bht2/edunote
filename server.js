@@ -75,7 +75,7 @@ setInterval(() => {
 }, 5 * 60 * 1000);
 
 app.listen(PORT, () => {
-  console.log(`🚀 EduNote v2 running at http://localhost:${PORT}`);
-  console.log(`📚 Admin: http://localhost:${PORT}/admin/login`);
+  console.log(`🚀 EduNote v2 running at https://localhost:${PORT}`);
+  console.log(`📚 Admin: https://localhost:${PORT}/admin/login`);
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
 });

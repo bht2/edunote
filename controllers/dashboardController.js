@@ -3,31 +3,70 @@ const Combination    = require('../models/Combination');
 const Class          = require('../models/Class');
 const Note           = require('../models/Note');
 const Admin          = require('../models/Admin');
+const ComboRequest   = require('../models/ComboRequest');
 const { avatarUpload, uploadAvatarToCloudinary, deleteFromCloudinary } = require('../middleware/upload');
 const cloudinary     = require('cloudinary').v2;
 
 const dashboardController = {
+
   index: async (req, res) => {
     try {
-      const levels       = await EducationLevel.findAll();
-      const combinations = await Combination.findAll();
-      const noteCount    = await Note.countAll();
-      const downloads    = await Note.countDownloads();
-      res.render('admin/dashboard', {
-        title: 'Dashboard - EduNote Admin',
-        layout: 'layouts/admin',
-        levels, combinations, noteCount, downloads
-      });
+      const isSuperAdmin = req.session.adminRole === 'admin';
+
+      if (isSuperAdmin) {
+        // Main admin dashboard — global stats
+        const levels       = await EducationLevel.findAll();
+        const combinations = await Combination.findAll();
+        const noteCount    = await Note.countAll();
+        const downloads    = await Note.countDownloads();
+        const pendingCount = await ComboRequest.countPending();
+        res.render('admin/dashboard', {
+          title: 'Dashboard — EduNote Admin',
+          layout: 'layouts/admin',
+          levels, combinations, noteCount, downloads, pendingCount,
+          assignedLevel: null
+        });
+      } else {
+        // Sub-admin dashboard — only their assigned level
+        const levelId      = req.session.adminLevelId;
+        const assignedLevel = levelId ? await EducationLevel.findById(levelId) : null;
+        const combinations = levelId ? await Combination.findByLevel(levelId) : [];
+        const myRequests   = await ComboRequest.findBySubAdmin(req.session.adminId);
+        const pendingMine  = myRequests.filter(r => r.status === 'pending').length;
+
+        // Count notes across all combos in assigned level
+        let noteCount = 0, downloads = 0;
+        for (const c of combinations) {
+          const classes = await Class.findByCombination(c.id);
+          for (const cl of classes) noteCount += (cl.note_count || 0);
+        }
+
+        res.render('admin/dashboard', {
+          title: 'Dashboard — EduNote',
+          layout: 'layouts/admin',
+          levels: assignedLevel ? [assignedLevel] : [],
+          combinations,
+          noteCount,
+          downloads,
+          pendingCount: pendingMine,
+          assignedLevel,
+          myRequests: myRequests.slice(0, 5)
+        });
+      }
     } catch (err) {
       console.error(err);
-      res.render('admin/dashboard', { title: 'Dashboard', layout: 'layouts/admin', levels: [], combinations: [], noteCount: 0, downloads: 0 });
+      res.render('admin/dashboard', {
+        title: 'Dashboard', layout: 'layouts/admin',
+        levels: [], combinations: [], noteCount: 0, downloads: 0, pendingCount: 0,
+        assignedLevel: null
+      });
     }
   },
 
   getSettings: async (req, res) => {
     try {
       const admin = await Admin.findById(req.session.adminId);
-      res.render('admin/settings', { title: 'Settings - EduNote', layout: 'layouts/admin', admin });
+      res.render('admin/settings', { title: 'Settings — EduNote', layout: 'layouts/admin', admin });
     } catch (err) {
       req.flash('error', 'Could not load settings.');
       res.redirect('/admin/dashboard');
@@ -78,10 +117,9 @@ const dashboardController = {
           req.flash('error', 'Please select an image file.');
           return res.redirect('/admin/settings');
         }
-        // Delete old avatar from cloudinary
         const admin = await Admin.findById(req.session.adminId);
         if (admin.avatar && admin.avatar.includes('cloudinary')) {
-          const parts = admin.avatar.split('/');
+          const parts    = admin.avatar.split('/');
           const publicId = 'edunote/avatars/' + parts[parts.length - 1].split('.')[0];
           await deleteFromCloudinary(publicId, 'image');
         }

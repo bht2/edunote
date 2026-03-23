@@ -2,19 +2,25 @@
   <div class="admin-page-header">
     <div>
       <div class="breadcrumb-admin">
-        <a href="/admin/levels">Levels</a>
-        <span>›</span>
+        <% if (locals.isSuperAdmin) { %><a href="/admin/levels">Levels</a> › <% } %>
         <span><%= level.name %></span>
       </div>
-      <h1><%= level.icon %> <%= level.name %> — <% if(level.slug==='tvet'){ %>Trades<% }else{ %>Combinations<% } %></h1>
-      <p>Each combination holds class years and their notes.</p>
+      <h1><%= level.icon %> <%= level.name %> — Combinations</h1>
+      <% if (!locals.isSuperAdmin) { %>
+        <p style="color:var(--muted);font-size:.875rem;margin-top:.25rem">
+          You can add/edit/delete classes and notes freely. Combination changes require main admin approval.
+        </p>
+      <% } %>
     </div>
     <a href="/admin/levels/<%= level.id %>/combinations/create" class="btn btn-primary">
-      + Add <% if(level.slug==='tvet'){ %>Trade<% }else{ %>Combination<% } %>
+      <%= locals.isSuperAdmin ? '+ Add Combination' : '+ Request New Combination' %>
     </a>
   </div>
+
   <% if (combinations.length === 0) { %>
-    <div class="admin-table-card"><div class="empty-state"><p>No combinations yet. <a href="/admin/levels/<%= level.id %>/combinations/create">Add the first one</a></p></div></div>
+    <div class="admin-table-card">
+      <div class="empty-state"><p>No combinations yet. <a href="/admin/levels/<%= level.id %>/combinations/create"><%= locals.isSuperAdmin ? 'Add the first one' : 'Request the first one' %></a></p></div>
+    </div>
   <% } else { %>
     <div class="combo-cards-grid">
       <% combinations.forEach(combo => { %>
@@ -28,10 +34,20 @@
           </div>
           <div class="combo-card-actions">
             <a href="/admin/combinations/<%= combo.id %>/classes" class="btn btn-sm btn-primary">Classes →</a>
-            <a href="/admin/levels/<%= level.id %>/combinations/<%= combo.id %>/edit" class="btn btn-sm btn-secondary">Edit</a>
-            <form action="/admin/levels/<%= level.id %>/combinations/<%= combo.id %>/delete" method="POST" style="display:inline" onsubmit="return confirm('Delete this combination and all its classes and notes?')">
-              <button class="btn btn-sm btn-danger">Delete</button>
-            </form>
+            <a href="/admin/levels/<%= level.id %>/combinations/<%= combo.id %>/edit" class="btn btn-sm btn-secondary">
+              <%= locals.isSuperAdmin ? 'Edit' : 'Request Edit' %>
+            </a>
+            <% if (locals.isSuperAdmin) { %>
+              <form action="/admin/levels/<%= level.id %>/combinations/<%= combo.id %>/delete" method="POST" style="display:inline"
+                    onsubmit="return confirm('Delete this combination and all its classes and notes?')">
+                <button class="btn btn-sm btn-danger">Delete</button>
+              </form>
+            <% } else { %>
+              <form action="/admin/levels/<%= level.id %>/combinations/<%= combo.id %>/delete" method="POST" style="display:inline"
+                    onsubmit="return confirm('Submit a delete request for this combination?')">
+                <button class="btn btn-sm btn-danger" style="background:#fef3c7;color:#92400e;border-color:#fde68a">Request Delete</button>
+              </form>
+            <% } %>
           </div>
         </div>
       <% }) %>

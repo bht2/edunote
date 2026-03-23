@@ -2,49 +2,68 @@
   <div class="admin-page-header">
     <div>
       <h1>Dashboard</h1>
-      <p>Welcome back, <%= locals.adminName %>! Here's what's happening on EduNote.</p>
+      <p>Welcome back, <%= locals.adminName %>!
+        <% if (!locals.isSuperAdmin && typeof assignedLevel !== 'undefined' && assignedLevel) { %>
+          You manage <strong><%= assignedLevel.icon %> <%= assignedLevel.name %></strong>.
+        <% } %>
+      </p>
     </div>
-    <a href="/" target="_blank" class="btn btn-secondary">🌐 View Site</a>
+    <% if (locals.isSuperAdmin) { %>
+      <a href="/" target="_blank" class="btn btn-secondary">🌐 View Site</a>
+    <% } %>
   </div>
+
+  <!-- Stats -->
   <div class="stats-grid">
     <div class="stat-card">
       <div class="stat-icon">📝</div>
-      <div class="stat-info"><div class="stat-value"><%= noteCount %></div><div class="stat-label">Total Notes</div></div>
+      <div class="stat-info"><div class="stat-value"><%= noteCount %></div><div class="stat-label"><%= locals.isSuperAdmin ? 'Total Notes' : 'Notes in My Level' %></div></div>
     </div>
+    <% if (locals.isSuperAdmin) { %>
     <div class="stat-card">
       <div class="stat-icon">⬇️</div>
       <div class="stat-info"><div class="stat-value"><%= downloads %></div><div class="stat-label">Total Downloads</div></div>
     </div>
+    <% } %>
     <div class="stat-card">
       <div class="stat-icon">🎓</div>
-      <div class="stat-info"><div class="stat-value"><%= levels.length %></div><div class="stat-label">Education Levels</div></div>
+      <div class="stat-info"><div class="stat-value"><%= levels.length %></div><div class="stat-label"><%= locals.isSuperAdmin ? 'Education Levels' : 'My Level' %></div></div>
     </div>
     <div class="stat-card">
       <div class="stat-icon">📚</div>
       <div class="stat-info"><div class="stat-value"><%= combinations.length %></div><div class="stat-label">Combinations</div></div>
     </div>
+    <% if (pendingCount > 0) { %>
+    <div class="stat-card">
+      <div class="stat-icon">⏳</div>
+      <div class="stat-info">
+        <div class="stat-value" style="color:#f59e0b"><%= pendingCount %></div>
+        <div class="stat-label"><%= locals.isSuperAdmin ? 'Pending Requests' : 'My Pending Requests' %></div>
+      </div>
+    </div>
+    <% } %>
   </div>
+
+  <!-- MAIN ADMIN: Quick Actions -->
+  <% if (locals.isSuperAdmin) { %>
   <div class="quick-actions">
     <h2>Quick Actions</h2>
     <div class="action-grid">
       <a href="/admin/levels" class="action-card">
-        <span>🎓</span>
-        <div><strong>Manage Structure</strong><p>Levels, combinations, classes</p></div>
+        <span>🎓</span><div><strong>Manage Structure</strong><p>Levels, combinations, classes</p></div>
       </a>
       <a href="/admin/subadmins" class="action-card">
-        <span>👥</span>
-        <div><strong>Sub-Admins</strong><p>Manage your team</p></div>
+        <span>👥</span><div><strong>Sub-Admins</strong><p>Manage your team</p></div>
       </a>
       <a href="/admin/requests" class="action-card">
-        <span>📋</span>
-        <div><strong>Requests</strong><p>Review pending changes</p></div>
+        <span>📋</span><div><strong>Requests</strong><p><%= pendingCount %> pending approval</p></div>
       </a>
       <a href="/admin/settings" class="action-card">
-        <span>⚙️</span>
-        <div><strong>Settings</strong><p>Profile &amp; password</p></div>
+        <span>⚙️</span><div><strong>Settings</strong><p>Profile &amp; password</p></div>
       </a>
     </div>
   </div>
+
   <div class="levels-overview">
     <h2>Education Levels</h2>
     <div class="level-list">
@@ -59,4 +78,80 @@
       <% }) %>
     </div>
   </div>
+
+  <% } else { %>
+  <!-- SUB-ADMIN: Their level's combinations -->
+  <% if (typeof assignedLevel !== 'undefined' && assignedLevel) { %>
+  <div class="quick-actions">
+    <h2>Quick Actions</h2>
+    <div class="action-grid">
+      <a href="/admin/levels/<%= assignedLevel.id %>/combinations" class="action-card">
+        <span>📚</span><div><strong>Combinations</strong><p>Manage <%= assignedLevel.name %></p></div>
+      </a>
+      <a href="/admin/levels/<%= assignedLevel.id %>/combinations/create" class="action-card">
+        <span>➕</span><div><strong>Request New Combination</strong><p>Submit for approval</p></div>
+      </a>
+      <a href="/admin/settings" class="action-card">
+        <span>⚙️</span><div><strong>Settings</strong><p>Profile &amp; password</p></div>
+      </a>
+    </div>
+  </div>
+
+  <div class="levels-overview">
+    <h2>Combinations in <%= assignedLevel.name %></h2>
+    <div class="level-list">
+      <% combinations.forEach(combo => { %>
+      <div class="level-item" style="border-left:4px solid <%= combo.color %>">
+        <div class="level-item-info">
+          <span class="combo-badge" style="background:<%= combo.color %>"><%= combo.name %></span>
+          <% if(combo.full_name){ %><span style="font-size:.82rem;color:var(--muted);margin-left:.5rem"><%= combo.full_name %></span><% } %>
+        </div>
+        <a href="/admin/combinations/<%= combo.id %>/classes" class="btn btn-sm btn-primary">Classes →</a>
+      </div>
+      <% }) %>
+    </div>
+  </div>
+
+  <!-- Sub-admin's recent requests -->
+  <% if (typeof myRequests !== 'undefined' && myRequests.length > 0) { %>
+  <div class="levels-overview" id="my-requests">
+    <h2>My Recent Requests</h2>
+    <div class="admin-table-card">
+      <table class="admin-table">
+        <thead><tr><th>Type</th><th>Combination</th><th>Status</th><th>Date</th></tr></thead>
+        <tbody>
+          <% myRequests.forEach(r => { %>
+          <tr>
+            <td>
+              <span style="padding:.2rem .65rem;border-radius:100px;font-size:.75rem;font-weight:700;
+                background:<%= r.request_type==='create'?'#d1fae5':r.request_type==='edit'?'#dbeafe':'#fee2e2' %>;
+                color:<%= r.request_type==='create'?'#065f46':r.request_type==='edit'?'#1e40af':'#dc2626' %>">
+                <%= r.request_type === 'create' ? '➕ New' : r.request_type === 'edit' ? '✏️ Edit' : '🗑️ Delete' %>
+              </span>
+            </td>
+            <td><%= r.combo_name || r.requested_data?.name || '—' %></td>
+            <td>
+              <span style="padding:.2rem .65rem;border-radius:100px;font-size:.75rem;font-weight:700;
+                background:<%= r.status==='approved'?'#d1fae5':r.status==='rejected'?'#fee2e2':'#fef3c7' %>;
+                color:<%= r.status==='approved'?'#065f46':r.status==='rejected'?'#dc2626':'#92400e' %>">
+                <%= r.status === 'approved' ? '✅ Approved' : r.status === 'rejected' ? '❌ Rejected' : '⏳ Pending' %>
+              </span>
+            </td>
+            <td style="font-size:.82rem;color:var(--muted-lt)"><%= new Date(r.created_at).toLocaleDateString('en-GB',{day:'2-digit',month:'short'}) %></td>
+          </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <% } %>
+
+  <% } else { %>
+  <div class="admin-table-card">
+    <div class="empty-state">
+      <p>⚠️ No level assigned to your account. Contact the main admin to assign you a level.</p>
+    </div>
+  </div>
+  <% } %>
+  <% } %>
 </div>

@@ -3,7 +3,7 @@ const Admin = require('../models/Admin');
 const authController = {
   getLogin: (req, res) => {
     if (req.session.adminId) return res.redirect('/admin/dashboard');
-    res.render('admin/login', { title: 'Admin Login - EduNote', layout: 'layouts/admin-auth' });
+    res.render('admin/login', { title: 'Admin Login — EduNote', layout: 'layouts/admin-auth' });
   },
 
   login: async (req, res) => {
@@ -23,10 +23,15 @@ const authController = {
         req.flash('error', 'Invalid credentials.');
         return res.redirect('/admin/login');
       }
-      req.session.adminId     = admin.id;
-      req.session.adminName   = admin.name;
-      req.session.adminEmail  = admin.email;
-      req.session.adminAvatar = admin.avatar || null;
+
+      // Store role and assigned level in session
+      req.session.adminId      = admin.id;
+      req.session.adminName    = admin.name;
+      req.session.adminEmail   = admin.email;
+      req.session.adminAvatar  = admin.avatar || null;
+      req.session.adminRole    = admin.role;      // 'admin' or 'sub'
+      req.session.adminLevelId = admin.level_id || null; // sub-admin's assigned level
+
       req.flash('success', `Welcome back, ${admin.name}!`);
       res.redirect('/admin/dashboard');
     } catch (err) {

@@ -16,12 +16,14 @@
     </button>
   </div>
   <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
   <div class="admin-layout">
     <aside class="sidebar" id="adminSidebar">
       <div class="sidebar-header">
         <a href="/admin/dashboard" class="sidebar-logo">✦ Edu<strong>Note</strong></a>
         <button class="sidebar-close-btn" id="sidebarCloseBtn" aria-label="Close">✕</button>
       </div>
+
       <div class="sidebar-admin">
         <% if (locals.adminAvatar && adminAvatar) { %>
           <img src="<%= adminAvatar %>" alt="Avatar" class="admin-avatar">
@@ -30,32 +32,58 @@
         <% } %>
         <div class="admin-info">
           <span class="admin-name"><%= locals.adminName || 'Admin' %></span>
-          <span class="admin-role">Administrator</span>
+          <span class="admin-role"><%= locals.adminRole === 'admin' ? 'Main Admin' : 'Sub-Admin' %></span>
         </div>
       </div>
+
       <nav class="sidebar-nav">
         <a href="/admin/dashboard" class="nav-item <%= locals.title && title.includes('Dashboard') ? 'active' : '' %>">
           <span class="nav-icon">🏠</span> Dashboard
         </a>
-        <div class="nav-section">Academic Structure</div>
-        <a href="/admin/levels" class="nav-item <%= locals.title && (title.includes('Level') || title.includes('Combination') || title.includes('Class') || title.includes('Notes')) ? 'active' : '' %>">
-          <span class="nav-icon">🎓</span> Education Levels
-        </a>
-        <div class="nav-section">Team</div>
-        <a href="/admin/subadmins" class="nav-item <%= locals.title && title.includes('Sub-Admin') ? 'active' : '' %>">
-          <span class="nav-icon">👥</span> Sub-Admins
-        </a>
-        <a href="/admin/requests" class="nav-item <%= locals.title && title.includes('Request') ? 'active' : '' %>">
-          <span class="nav-icon">📋</span> Requests
-        </a>
+
+        <% if (locals.isSuperAdmin) { %>
+          <!-- MAIN ADMIN NAVIGATION -->
+          <div class="nav-section">Academic Structure</div>
+          <a href="/admin/levels" class="nav-item <%= locals.title && (title.includes('Level') || title.includes('Combination') || title.includes('Class') || title.includes('Notes')) ? 'active' : '' %>">
+            <span class="nav-icon">🎓</span> Education Levels
+          </a>
+
+          <div class="nav-section">Team</div>
+          <a href="/admin/subadmins" class="nav-item <%= locals.title && title.includes('Sub-Admin') ? 'active' : '' %>">
+            <span class="nav-icon">👥</span> Sub-Admins
+          </a>
+          <a href="/admin/requests" class="nav-item <%= locals.title && title.includes('Request') ? 'active' : '' %>">
+            <span class="nav-icon">📋</span> Requests
+          </a>
+
+        <% } else { %>
+          <!-- SUB-ADMIN NAVIGATION — only their assigned level -->
+          <div class="nav-section">My Level</div>
+          <% if (locals.adminLevelId) { %>
+            <a href="/admin/levels/<%= locals.adminLevelId %>/combinations" class="nav-item <%= locals.title && (title.includes('Combination') || title.includes('Class') || title.includes('Notes')) ? 'active' : '' %>">
+              <span class="nav-icon">📚</span> Combinations
+            </a>
+          <% } %>
+
+          <div class="nav-section">Requests</div>
+          <a href="/admin/dashboard#my-requests" class="nav-item">
+            <span class="nav-icon">📋</span> My Requests
+          </a>
+        <% } %>
+
         <div class="nav-section">Account</div>
-        <a href="/" target="_blank" class="nav-item"><span class="nav-icon">🌐</span> View Site</a>
+        <% if (locals.isSuperAdmin) { %>
+          <a href="/" target="_blank" class="nav-item"><span class="nav-icon">🌐</span> View Site</a>
+        <% } %>
         <a href="/admin/settings" class="nav-item <%= locals.title && title.includes('Settings') ? 'active' : '' %>">
           <span class="nav-icon">⚙️</span> Settings
         </a>
-        <a href="/admin/logout" class="nav-item nav-logout"><span class="nav-icon">🚪</span> Logout</a>
+        <a href="/admin/logout" class="nav-item nav-logout">
+          <span class="nav-icon">🚪</span> Logout
+        </a>
       </nav>
     </aside>
+
     <div class="admin-main">
       <% if (locals.success_msg && success_msg.length > 0) { %>
         <div class="alert alert-success"><%= success_msg %></div>
@@ -66,6 +94,7 @@
       <%- body %>
     </div>
   </div>
+
   <script src="/js/admin.js"></script>
 </body>
 </html>

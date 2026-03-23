@@ -23,7 +23,7 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: process.env.HTTPS === 'true', // only true when behind HTTPS proxy
+    secure: process.env.HTTPS === 'true',
     httpOnly: true,
     maxAge: 24 * 60 * 60 * 1000
   }
@@ -31,13 +31,17 @@ app.use(session({
 
 app.use(flash());
 
+// Make session data and role available to all views
 app.use((req, res, next) => {
-  res.locals.success_msg  = req.flash('success');
-  res.locals.error_msg    = req.flash('error');
-  res.locals.adminId      = req.session.adminId    || null;
-  res.locals.adminName    = req.session.adminName  || null;
-  res.locals.adminEmail   = req.session.adminEmail || null;
-  res.locals.adminAvatar  = req.session.adminAvatar || null;
+  res.locals.success_msg    = req.flash('success');
+  res.locals.error_msg      = req.flash('error');
+  res.locals.adminId        = req.session.adminId     || null;
+  res.locals.adminName      = req.session.adminName   || null;
+  res.locals.adminEmail     = req.session.adminEmail  || null;
+  res.locals.adminAvatar    = req.session.adminAvatar || null;
+  res.locals.adminRole      = req.session.adminRole   || null;   // 'admin' or 'sub'
+  res.locals.adminLevelId   = req.session.adminLevelId || null;  // sub-admin's level
+  res.locals.isSuperAdmin   = req.session.adminRole === 'admin'; // convenience flag for views
   next();
 });
 
@@ -62,6 +66,12 @@ app.use((err, req, res, next) => {
     layout: 'layouts/public'
   });
 });
+
+// Keep MySQL pool alive
+const db = require('./config/database');
+setInterval(() => {
+  db.execute('SELECT 1').catch(err => console.error('DB keep-alive error:', err.message));
+}, 5 * 60 * 1000);
 
 app.listen(PORT, () => {
   console.log(`🚀 EduNote v2 running at http://localhost:${PORT}`);

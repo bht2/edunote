@@ -6,7 +6,7 @@ const ejsLayouts = require('express-ejs-layouts');
 const path       = require('path');
 
 const app  = express();
-app.set("trust proxy", 1); // Trust Railway reverse proxy
+app.set('trust proxy', 1); // Trust Railway reverse proxy
 const PORT = process.env.PORT || 3000;
 
 app.set('view engine', 'ejs');
@@ -73,9 +73,10 @@ const db = require('./config/database');
 setInterval(() => {
   db.execute('SELECT 1').catch(err => console.error('DB keep-alive error:', err.message));
 }, 5 * 60 * 1000);
+const PORT = process.env.PORT || 8080;
 
 app.listen(PORT, () => {
-  console.log(`🚀 EduNote v2 running at https://localhost:${PORT}`);
+  console.log(`🚀 EduNote v2 running at http://localhost:${PORT}`);
   console.log(`📚 Admin: https://localhost:${PORT}/admin/login`);
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
 });

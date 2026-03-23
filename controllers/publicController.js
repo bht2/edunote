@@ -133,6 +133,23 @@ async function getFileContent(note) {
 
 const pub = {
 
+  search: async (req, res) => {
+    const query = (req.query.q || '').trim();
+    if (!query) return res.redirect('/notes');
+    try {
+      const results = await Note.search(query);
+      res.render('public/search', {
+        title: 'Search: ' + query + ' — EduNote',
+        query,
+        notes: results.map(n => ({ ...n, file_size_formatted: Note.formatFileSize(n.file_size) })),
+        layout: 'layouts/public'
+      });
+    } catch (e) {
+      console.error(e);
+      res.render('public/error', { title: 'Error', message: 'Search failed.', layout: 'layouts/public' });
+    }
+  },
+
   index: async (req, res) => {
     try {
       const levels = await EducationLevel.findAll();
